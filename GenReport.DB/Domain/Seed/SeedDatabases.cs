@@ -1,4 +1,4 @@
-﻿using GenReport.DB.Domain.Entities.Core;
+using GenReport.DB.Domain.Entities.Core;
 using GenReport.DB.Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -25,6 +25,7 @@ namespace GenReport.DB.Domain.Seed
                 SizeInBytes = 0,
                 Status = "InActive",
                 Type = DatabaseType.PostgreSQL.ToString(),
+                Provider = DbProvider.NpgSql,
                 Username = "postgres",
                 Port = 5433,
                 CreatedAt = DateTime.UtcNow,

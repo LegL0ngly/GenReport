@@ -32,10 +32,8 @@ namespace GenReport.DB.Domain.Seed
         }
         /// <summary>
         /// Seeds the mandatory tables.
-        /// </summary>
         public async Task SeedMandatoryTables()
         {
-            await SeedDbProviders();
             await SeedModules();
             await SeedUsers();
         }

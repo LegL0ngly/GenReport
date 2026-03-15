@@ -1,4 +1,4 @@
-﻿using GenReport.DB.Domain.Entities.Core;
+using GenReport.DB.Domain.Entities.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -15,7 +15,6 @@ namespace GenReport.DB.Domain.EntityConfigurations
         /// <param name="builder">The builder to be used to configure the entity type.</param>
         public void Configure(EntityTypeBuilder<Database> builder)
         {
-            builder.HasOne(x=>x.DbProvider).WithMany().HasForeignKey(x=>x.DbProviderId).OnDelete(DeleteBehavior.NoAction);
             builder.HasKey(x => x.Id);
 
         }

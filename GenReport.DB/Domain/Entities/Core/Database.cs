@@ -1,4 +1,4 @@
-﻿using CoreDdd.Domain;
+using CoreDdd.Domain;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -6,6 +6,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using GenReport.DB.Domain.Enums;
 
 namespace GenReport.DB.Domain.Entities.Core
 {
@@ -124,9 +126,12 @@ namespace GenReport.DB.Domain.Entities.Core
         /// </summary>
         [Column("security_level")]
         public string? SecurityLevel { get; set; }
-        #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-        public DbProvider DbProvider { get; set; }
-        public long DbProviderId { get; set; }
 
+        /// <summary>
+        /// Gets or sets the database provider enum.
+        /// </summary>
+        [Column("provider")]
+        [Required]
+        public DbProvider Provider { get; set; }
     }
 }

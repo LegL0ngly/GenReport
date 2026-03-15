@@ -1,3 +1,4 @@
+using GenReport.DB.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace GenReport.Infrastructure.Models.HttpRequests.Core.Databases
@@ -10,6 +11,8 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Databases
         public string? Name { get; set; }
 
         public string? Type { get; set; }
+
+        public DbProvider? Provider { get; set; }
 
         public string? ConnectionString { get; set; }
 

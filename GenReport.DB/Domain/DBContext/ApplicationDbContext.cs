@@ -57,13 +57,6 @@ namespace GenReport.Domain.DBContext
         /// </value>
         public DbSet<Query> Queries { get; set; }
         /// <summary>
-        /// Gets or sets the database providers.
-        /// </summary>
-        /// <value>
-        /// The database providers.
-        /// </value>
-        public DbSet<DbProvider> DbProviders { get; set; }
-        /// <summary>
         /// The Reports table represents all the reports generated 
         /// </summary>
         public DbSet<Report> Reports { get; set; }

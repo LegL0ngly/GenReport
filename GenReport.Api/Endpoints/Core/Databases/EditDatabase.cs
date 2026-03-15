@@ -43,6 +43,7 @@ namespace GenReport.Api.Endpoints.Core.Databases
             if (req.Port.HasValue) existingDb.Port = req.Port.Value;
             if (req.Username != null) existingDb.Username = req.Username;
             if (req.Password != null) existingDb.Password = req.Password; 
+            if (req.Provider.HasValue) existingDb.Provider = req.Provider.Value;
             if (req.Description != null) existingDb.Description = req.Description;
 
             existingDb.UpdatedAt = DateTime.UtcNow;
