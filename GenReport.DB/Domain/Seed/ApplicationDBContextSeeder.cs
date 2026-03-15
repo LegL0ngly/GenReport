@@ -40,9 +40,15 @@ namespace GenReport.DB.Domain.Seed
 
         public async Task RunScripts()
         {
-           var root =  Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? throw new InvalidOperationException("Invalid folder for sql files");
-            using var  sqltransaction = applicationDbContext.Database.BeginTransaction();
-            try   
+            if (applicationDbContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                logger.Information("Skipping SQL scripts for in-memory database.");
+                return;
+            }
+
+            var root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? throw new InvalidOperationException("Invalid folder for sql files");
+            using var sqltransaction = applicationDbContext.Database.BeginTransaction();
+            try
             {
                 foreach (var file in Directory.GetFiles(root))
                 {
@@ -52,14 +58,14 @@ namespace GenReport.DB.Domain.Seed
                         await applicationDbContext.Database.ExecuteSqlRawAsync(sql);
                     }
                 }
-              await  sqltransaction.CommitAsync() ;
+                await sqltransaction.CommitAsync();
             }
             catch (Exception e)
             {
                 logger.Error(e, $"TAG - {nameof(ApplicationDBContextSeeder)} error executing neccessary sql files {e.Message}");
-                await sqltransaction.RollbackAsync() ;
+                await sqltransaction.RollbackAsync();
             }
-     
+
         }
     }
 }
