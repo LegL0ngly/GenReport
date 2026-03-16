@@ -1,4 +1,4 @@
-﻿namespace GenReport.Infrastructure.Security
+namespace GenReport.Infrastructure.Security
 {
     using GenReport.Domain.Entities.Onboarding;
     using GenReport.Infrastructure.Interfaces;
@@ -63,6 +63,8 @@
             var result = await _tokenHandler?.ValidateTokenAsync(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
+                ValidateIssuer = false,
+                ValidateAudience = false,
                 ClockSkew = TimeSpan.Zero,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(issuerKey)),
             });

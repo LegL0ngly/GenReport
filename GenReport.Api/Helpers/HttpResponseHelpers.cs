@@ -2,6 +2,8 @@
 using GenReport.Infrastructure.Models.Shared;
 using GenReport.Infrastructure.Static.Constants;
 using System.Net;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace GenReport.Helpers
 {
@@ -60,7 +62,69 @@ namespace GenReport.Helpers
         /// </summary>
         private static Action<HttpContext> addUserToContext = (HttpContext httpContext) => 
         {
-            throw new NotImplementedException();
+            if (httpContext?.User?.Identity is not ClaimsIdentity existingIdentity || !existingIdentity.IsAuthenticated)
+            {
+                return;
+            }
+
+            var sourceClaims = httpContext.User.Claims.ToList();
+
+            string? userId = sourceClaims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Sub)?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == "sub")?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == "nameid")?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == "userId")?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == "userid")?.Value;
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return;
+            }
+
+            string userName = sourceClaims.FirstOrDefault(x => x.Type == ClaimTypes.Name)?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.UniqueName)?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == "name")?.Value
+                ?? userId;
+
+            string? role = sourceClaims.FirstOrDefault(x => x.Type == ClaimTypes.Role)?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == "role")?.Value;
+
+            string? email = sourceClaims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Email)?.Value
+                ?? sourceClaims.FirstOrDefault(x => x.Type == "email")?.Value;
+
+            var normalizedClaims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, userId),
+                new(ClaimTypes.Name, userName)
+            };
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                normalizedClaims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                normalizedClaims.Add(new Claim(ClaimTypes.Email, email));
+            }
+
+            foreach (var claim in sourceClaims)
+            {
+                bool exists = normalizedClaims.Any(x => x.Type == claim.Type && x.Value == claim.Value);
+                if (!exists)
+                {
+                    normalizedClaims.Add(claim);
+                }
+            }
+
+            var identity = new ClaimsIdentity(
+                normalizedClaims,
+                existingIdentity.AuthenticationType ?? "Bearer",
+                ClaimTypes.Name,
+                ClaimTypes.Role);
+
+            httpContext.User = new ClaimsPrincipal(identity);
         };
     }
 }

@@ -23,7 +23,7 @@ namespace GenReport.DB.Domain.Seed
                 middleName: "Middle",
                 profileURL: "https://example.com/admin.png"
             );
-            adminUser.RoleId = 1; // Assuming 1 is Admin role
+            adminUser.RoleId = 2; 
 
             await applicationDbContext.Users.AddAsync(adminUser);
             await applicationDbContext.SaveChangesAsync();

@@ -68,6 +68,7 @@ builder.Services.AddAuthentication(options =>
     {
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(applicationConfiguration.IssuerSigningKey)),
         ValidateIssuerSigningKey = true,
+        ValidateIssuer = false,
         ValidateAudience = false,
         SaveSigninToken = false,
         RequireExpirationTime = true,
@@ -149,7 +150,6 @@ if (app.Environment.IsDevelopment())
 }
 
 await app.RunAsync();
-
 
 
 
