@@ -57,7 +57,10 @@ builder.Services.AddSingleton<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IApplicationSeeder, ApplicationDBContextSeeder>();
 builder.Services.AddSingleton<IJWTTokenService, JWTTokenService>();
 builder.Services.AddScoped<ITestConnectionService, TestConnectionService>();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("GoService", client =>
+{
+    client.BaseAddress = new Uri($"http://{applicationConfiguration.GoHost}:{applicationConfiguration.GoPort}");
+});
 builder.Services.AddHttpContextAccessor();
 
 // add cors

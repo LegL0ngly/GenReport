@@ -1,4 +1,4 @@
-﻿using GenReport.Infrastructure.Configuration;
+using GenReport.Infrastructure.Configuration;
 
 namespace GenReport.Infrastructure.Interfaces
 {
@@ -56,5 +56,20 @@ namespace GenReport.Infrastructure.Interfaces
         /// Gets or sets the configuration settings for connecting to a RabbitMQ server.
         /// </summary>
         public RabbitMQConfiguration RabbitMQConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the hostname of the Go service.
+        /// </summary>
+        public string GoHost { get; set; }
+
+        /// <summary>
+        /// Gets or sets the port the Go service is listening on.
+        /// </summary>
+        public int GoPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets the path for the Go service test connection endpoint.
+        /// </summary>
+        public string GoTestConnectionPath { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using GenReport.Infrastructure.Interfaces;
+using GenReport.Infrastructure.Interfaces;
 
 namespace GenReport.Infrastructure.Configuration
 {
@@ -63,5 +63,20 @@ namespace GenReport.Infrastructure.Configuration
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         public RabbitMQConfiguration RabbitMQConfiguration { get; set; }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+
+        /// <summary>
+        /// Gets or sets the hostname of the Go service.
+        /// </summary>
+        public string GoHost { get; set; } = "localhost";
+
+        /// <summary>
+        /// Gets or sets the port the Go service is listening on.
+        /// </summary>
+        public int GoPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets the path for the Go service test connection endpoint.
+        /// </summary>
+        public string GoTestConnectionPath { get; set; } = "/connections/test";
     }
 }
