@@ -3,13 +3,18 @@ using GenReport.DB.Domain.Entities.Core;
 using GenReport.Domain.DBContext;
 using GenReport.Infrastructure.Models.HttpRequests.Core.Databases;
 using GenReport.Infrastructure.Models.Shared;
+using GenReport.Infrastructure.Security.Encryption;
 using GenReport.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace GenReport.Api.Endpoints.Core.Databases
 {
-    public class AddDatabase(ApplicationDbContext context, ILogger<AddDatabase> logger, ICurrentUserService currentUserService) : Endpoint<AddDatabaseRequest, HttpResponse<string>>
+    public class AddDatabase(
+        ApplicationDbContext context,
+        ILogger<AddDatabase> logger,
+        ICurrentUserService currentUserService,
+        ICredentialEncryptorFactory encryptorFactory) : Endpoint<AddDatabaseRequest, HttpResponse<string>>
     {
         public override void Configure()
         {
@@ -28,6 +33,12 @@ namespace GenReport.Api.Endpoints.Core.Databases
                 return;
             }
 
+            // Encrypt the password before persisting
+            var passwordEncryptor = encryptorFactory.GetEncryptor(CredentialType.Password);
+            var encryptedPassword  = string.IsNullOrEmpty(req.Password)
+                ? string.Empty
+                : passwordEncryptor.Encrypt(req.Password);
+
             var newDatabase = new Database
             {
                 Name = req.DatabaseName,
@@ -37,7 +48,7 @@ namespace GenReport.Api.Endpoints.Core.Databases
                 ServerAddress = req.HostName ?? string.Empty,
                 Port = req.Port,
                 Username = req.UserName ?? string.Empty,
-                Password = req.Password ?? string.Empty,
+                Password = encryptedPassword,
                 Description = req.Description ?? string.Empty,
                 Status = "Active",
                 SizeInBytes = 0,

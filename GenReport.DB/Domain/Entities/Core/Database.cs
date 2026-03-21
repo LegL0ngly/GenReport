@@ -69,10 +69,10 @@ namespace GenReport.DB.Domain.Entities.Core
         public required string Username { get; set; }
 
         /// <summary>
-        /// Gets or sets the password for accessing the database.
+        /// Gets or sets the encrypted password for accessing the database.
+        /// Stored as AES-256-GCM Base64 ciphertext; no length limit applied.
         /// </summary>
         [Column("password")]
-        [StringLength(255)]
         public required string Password { get; set; }
 
         /// <summary>

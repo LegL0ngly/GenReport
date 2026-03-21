@@ -2,13 +2,18 @@ using FastEndpoints;
 using GenReport.Domain.DBContext;
 using GenReport.Infrastructure.Models.HttpRequests.Core.Databases;
 using GenReport.Infrastructure.Models.Shared;
+using GenReport.Infrastructure.Security.Encryption;
 using GenReport.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace GenReport.Api.Endpoints.Core.Databases
 {
-    public class EditDatabase(ApplicationDbContext context, ILogger<EditDatabase> logger, ICurrentUserService currentUserService) : Endpoint<EditDatabaseRequest, HttpResponse<string>>
+    public class EditDatabase(
+        ApplicationDbContext context,
+        ILogger<EditDatabase> logger,
+        ICurrentUserService currentUserService,
+        ICredentialEncryptorFactory encryptorFactory) : Endpoint<EditDatabaseRequest, HttpResponse<string>>
     {
         public override void Configure()
         {
@@ -43,7 +48,11 @@ namespace GenReport.Api.Endpoints.Core.Databases
             if (req.HostName != null) existingDb.ServerAddress = req.HostName;
             if (req.Port.HasValue) existingDb.Port = req.Port.Value;
             if (req.UserName != null) existingDb.Username = req.UserName;
-            if (req.Password != null) existingDb.Password = req.Password; 
+            if (req.Password != null)
+            {
+                // Encrypt the updated password before persisting
+                existingDb.Password = encryptorFactory.GetEncryptor(CredentialType.Password).Encrypt(req.Password);
+            }
             if (req.Provider.HasValue) existingDb.Provider = req.Provider.Value;
             if (req.Description != null) existingDb.Description = req.Description;
 
