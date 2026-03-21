@@ -89,6 +89,122 @@ namespace GenReport.DB.Migrations
                     b.ToTable("rolemodulemappings");
                 });
 
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiConnection", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("api_key");
+
+                    b.Property<decimal?>("CostPer1kInputTokens")
+                        .HasColumnType("decimal(18,8)")
+                        .HasColumnName("cost_per_1k_input_tokens");
+
+                    b.Property<decimal?>("CostPer1kOutputTokens")
+                        .HasColumnType("decimal(18,8)")
+                        .HasColumnName("cost_per_1k_output_tokens");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DefaultModel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("default_model");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<int?>("MaxTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_tokens");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("provider");
+
+                    b.Property<int?>("RateLimitRpm")
+                        .HasColumnType("integer")
+                        .HasColumnName("rate_limit_rpm");
+
+                    b.Property<int?>("RateLimitTpm")
+                        .HasColumnType("integer")
+                        .HasColumnName("rate_limit_tpm");
+
+                    b.Property<string>("SystemPrompt")
+                        .HasColumnType("text")
+                        .HasColumnName("system_prompt");
+
+                    b.Property<double?>("Temperature")
+                        .HasColumnType("double precision")
+                        .HasColumnName("temperature");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ai_connections");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiModelEndpoint", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AiConnectionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ai_connection_id");
+
+                    b.Property<string>("EndpointType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("endpoint_type");
+
+                    b.Property<string>("HttpMethod")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("http_method");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("path");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AiConnectionId");
+
+                    b.ToTable("ai_model_endpoints");
+                });
+
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.Database", b =>
                 {
                     b.Property<long>("Id")
@@ -137,8 +253,7 @@ namespace GenReport.DB.Migrations
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("password");
 
                     b.Property<int>("Port")
@@ -417,6 +532,17 @@ namespace GenReport.DB.Migrations
                     b.Navigation("Module");
                 });
 
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiModelEndpoint", b =>
+                {
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.AiConnection", "AiConnection")
+                        .WithMany("ModelEndpoints")
+                        .HasForeignKey("AiConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AiConnection");
+                });
+
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.Query", b =>
                 {
                     b.HasOne("GenReport.Domain.Entities.Onboarding.User", "CreatedBy")
@@ -451,6 +577,11 @@ namespace GenReport.DB.Migrations
                     b.Navigation("MediaFile");
 
                     b.Navigation("Query");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiConnection", b =>
+                {
+                    b.Navigation("ModelEndpoints");
                 });
 #pragma warning restore 612, 618
         }

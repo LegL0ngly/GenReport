@@ -366,3 +366,4 @@ FodyWeavers.xsd
 .DS_Store
 GenReport.Api/.idea/.idea.GenReport/.idea/encodings.xml
 */.idea/*
+/GenReport.DB/Migrations

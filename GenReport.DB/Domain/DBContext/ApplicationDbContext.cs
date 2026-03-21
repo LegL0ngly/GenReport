@@ -49,25 +49,18 @@ namespace GenReport.Domain.DBContext
         /// The databases.
         /// </value>
         public DbSet<Database> Databases { get; set; }
-        /// <summary>
-        /// Gets or sets the queries.
-        /// </summary>
-        /// <value>
-        /// The queries.
-        /// </value>
+        /// <summary>Gets or sets the queries.</summary>
         public DbSet<Query> Queries { get; set; }
-        /// <summary>
-        /// The Reports table represents all the reports generated 
-        /// </summary>
+        /// <summary>The Reports table represents all the reports generated.</summary>
         public DbSet<Report> Reports { get; set; }
-        /// <summary>
-        /// The Table for modules represents various modules available in this software
-        /// </summary>
+        /// <summary>Module access control table.</summary>
         public DbSet<Module> Modules { get; set; }
-        /// <summary>
-        /// The Table for rolemodules mapping represents various modules mappings available in this software
-        /// </summary>
-        public DbSet<RoleModuleMapping> RoleModules { get; set; }   
+        /// <summary>Role-to-module mapping table.</summary>
+        public DbSet<RoleModuleMapping> RoleModules { get; set; }
+        /// <summary>AI/LLM provider connection configurations.</summary>
+        public DbSet<AiConnection> AiConnections { get; set; }
+        /// <summary>Per-connection model endpoint definitions (Chat, Models, Quota).</summary>
+        public DbSet<AiModelEndpoint> AiModelEndpoints { get; set; }
         #endregion
 
         /// <summary>
