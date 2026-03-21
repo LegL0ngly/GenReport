@@ -78,5 +78,10 @@ namespace GenReport.Infrastructure.Configuration
         /// Gets or sets the path for the Go service test connection endpoint.
         /// </summary>
         public string GoTestConnectionPath { get; set; } = "/connections/test";
+
+        /// <summary>
+        /// Gets or sets the Base64-encoded 32-byte master key used by the credential encryption service.
+        /// </summary>
+        public string EncryptionMasterKey { get; set; } = "";
     }
 }

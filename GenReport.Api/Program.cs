@@ -6,6 +6,7 @@ using GenReport.Helpers;
 using GenReport.Infrastructure.Configuration;
 using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Security;
+using GenReport.Infrastructure.Security.Encryption;
 using GenReport.Infrastructure.SharedServices.Core.Databases;
 using GenReport.Middlewares;
 using GenReport.Services.Implementations;
@@ -57,6 +58,13 @@ builder.Services.AddSingleton<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IApplicationSeeder, ApplicationDBContextSeeder>();
 builder.Services.AddSingleton<IJWTTokenService, JWTTokenService>();
 builder.Services.AddScoped<ITestConnectionService, TestConnectionService>();
+
+// Credential Encryption — factory pattern
+builder.Services.AddSingleton<ICredentialEncryptor>(new ApiKeyEncryptor(applicationConfiguration.EncryptionMasterKey));
+builder.Services.AddSingleton<ICredentialEncryptor>(new PasswordEncryptor(applicationConfiguration.EncryptionMasterKey));
+builder.Services.AddSingleton<ICredentialEncryptor>(new ConnectionStringEncryptor(applicationConfiguration.EncryptionMasterKey));
+builder.Services.AddSingleton<ICredentialEncryptorFactory>(sp =>
+    new CredentialEncryptorFactory(sp.GetRequiredService<IEnumerable<ICredentialEncryptor>>()));
 builder.Services.AddHttpClient("GoService", client =>
 {
     client.BaseAddress = new Uri($"http://{applicationConfiguration.GoHost}:{applicationConfiguration.GoPort}");
