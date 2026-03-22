@@ -67,6 +67,10 @@ namespace GenReport.Domain.DBContext
         public DbSet<ChatMessage> ChatMessages { get; set; }
         /// <summary>Mappings between a chat message and a generated report.</summary>
         public DbSet<MessageReport> MessageReports { get; set; }
+        /// <summary>Database schema tables and views along with embeddings.</summary>
+        public DbSet<SchemaObject> SchemaObjects { get; set; }
+        /// <summary>Database routines like SPs and functions along with embeddings.</summary>
+        public DbSet<RoutineObject> RoutineObjects { get; set; }
         #endregion
 
         /// <summary>
@@ -89,6 +93,7 @@ namespace GenReport.Domain.DBContext
         /// </remarks>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasPostgresExtension("vector");
             modelBuilder.ApplyAllConfigurations(); 
             base.OnModelCreating(modelBuilder);
         }

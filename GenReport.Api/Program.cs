@@ -39,7 +39,10 @@ try
 // Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.ConfigureWarnings(w => w.Ignore(CoreEventId.PossibleIncorrectRequiredNavigationWithQueryFilterInteractionWarning)).UseNpgsql(configuration.GetConnectionString("GenReportPostgres"),
-        npgSqlOptions => npgSqlOptions.CommandTimeout(applicationConfiguration.CommandTimeOut)));
+        npgSqlOptions => {
+            npgSqlOptions.CommandTimeout(applicationConfiguration.CommandTimeOut);
+            npgSqlOptions.UseVector();
+        }));
 
 // Add FastEndpoints
 builder.Services.AddFastEndpoints();

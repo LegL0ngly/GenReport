@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 
 #nullable disable
 
@@ -20,6 +21,7 @@ namespace GenReport.DB.Migrations
                 .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Business.Module", b =>
@@ -509,6 +511,114 @@ namespace GenReport.DB.Migrations
                     b.ToTable("reports");
                 });
 
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.RoutineObject", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("DatabaseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("database_id");
+
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(1536)")
+                        .HasColumnName("embedding");
+
+                    b.Property<string>("EmbeddingText")
+                        .HasColumnType("text")
+                        .HasColumnName("embedding_text");
+
+                    b.Property<string>("FullSchema")
+                        .HasColumnType("text")
+                        .HasColumnName("full_schema");
+
+                    b.Property<string>("Metadata")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("type");
+
+                    b.Property<long?>("database_id")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("database_id");
+
+                    b.ToTable("routine_objects", t =>
+                        {
+                            t.Property("database_id")
+                                .HasColumnName("database_id1");
+                        });
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.SchemaObject", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("DatabaseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("database_id");
+
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(1536)")
+                        .HasColumnName("embedding");
+
+                    b.Property<string>("EmbeddingText")
+                        .HasColumnType("text")
+                        .HasColumnName("embedding_text");
+
+                    b.Property<string>("FullSchema")
+                        .HasColumnType("text")
+                        .HasColumnName("full_schema");
+
+                    b.Property<string>("Metadata")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("type");
+
+                    b.Property<long?>("database_id")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("database_id");
+
+                    b.ToTable("schema_objects", t =>
+                        {
+                            t.Property("database_id")
+                                .HasColumnName("database_id1");
+                        });
+                });
+
             modelBuilder.Entity("GenReport.Domain.Entities.Media.MediaFile", b =>
                 {
                     b.Property<long>("Id")
@@ -711,6 +821,24 @@ namespace GenReport.DB.Migrations
                     b.Navigation("MediaFile");
 
                     b.Navigation("Query");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.RoutineObject", b =>
+                {
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.Database", "Database")
+                        .WithMany()
+                        .HasForeignKey("database_id");
+
+                    b.Navigation("Database");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.SchemaObject", b =>
+                {
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.Database", "Database")
+                        .WithMany()
+                        .HasForeignKey("database_id");
+
+                    b.Navigation("Database");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiConnection", b =>
