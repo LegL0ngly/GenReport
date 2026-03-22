@@ -59,8 +59,6 @@ namespace GenReport.Domain.DBContext
         public DbSet<RoleModuleMapping> RoleModules { get; set; }
         /// <summary>AI/LLM provider connection configurations.</summary>
         public DbSet<AiConnection> AiConnections { get; set; }
-        /// <summary>Per-connection model endpoint definitions (Chat, Models, Quota).</summary>
-        public DbSet<AiModelEndpoint> AiModelEndpoints { get; set; }
         /// <summary>Chat sessions.</summary>
         public DbSet<ChatSession> ChatSessions { get; set; }
         /// <summary>Chat messages within sessions.</summary>

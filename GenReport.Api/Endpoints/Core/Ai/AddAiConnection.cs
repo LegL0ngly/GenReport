@@ -20,14 +20,6 @@ namespace GenReport.Api.Endpoints.Core.Ai
         ICredentialEncryptorFactory encryptorFactory)
         : Endpoint<AddAiConnectionRequest, HttpResponse<AiConnectionResponse>>
     {
-        // Default endpoints seeded for every new AI connection.
-        private static readonly (AiEndpointType Type, string Path, string Method)[] DefaultEndpoints =
-        [
-            (AiEndpointType.Chat,   "/v1/chat/completions", "POST"),
-            (AiEndpointType.Models, "/v1/models",           "GET"),
-            (AiEndpointType.Quota,  "/v1/usage",            "GET"),
-        ];
-
         public override void Configure()
         {
             Post("/ai/connections");
@@ -70,23 +62,10 @@ namespace GenReport.Api.Endpoints.Core.Ai
             };
 
             await context.AiConnections.AddAsync(connection, ct);
-            await context.SaveChangesAsync(ct); // get generated Id
-
-            // Seed the 3 default model endpoints
-            var endpoints = DefaultEndpoints.Select(ep => new AiModelEndpoint
-            {
-                AiConnectionId = connection.Id,
-                EndpointType   = ep.Type,
-                Path           = ep.Path,
-                HttpMethod     = ep.Method,
-                IsEnabled      = true
-            }).ToList();
-
-            await context.AiModelEndpoints.AddRangeAsync(endpoints, ct);
             await context.SaveChangesAsync(ct);
 
-            logger.LogInformation("Created AI connection for provider {Provider} (id={Id}) with {Count} default endpoints",
-                connection.Provider, connection.Id, endpoints.Count);
+            logger.LogInformation("Created AI connection for provider {Provider} (id={Id})",
+                connection.Provider, connection.Id);
 
             var response = new AiConnectionResponse
             {
@@ -102,17 +81,7 @@ namespace GenReport.Api.Endpoints.Core.Ai
                 CostPer1kOutputTokens = connection.CostPer1kOutputTokens,
                 IsActive              = connection.IsActive,
                 CreatedAt             = connection.CreatedAt,
-                UpdatedAt             = connection.UpdatedAt,
-                ModelEndpoints        = endpoints.Select(e => new AiModelEndpointResponse
-                {
-                    Id             = e.Id,
-                    AiConnectionId = e.AiConnectionId,
-                    EndpointType   = e.EndpointType,
-                    Path           = e.Path,
-                    HttpMethod     = e.HttpMethod,
-                    IsEnabled      = e.IsEnabled,
-                    Notes          = e.Notes
-                }).ToList()
+                UpdatedAt             = connection.UpdatedAt
             };
 
             await SendAsync(new HttpResponse<AiConnectionResponse>(response, "AI connection created.", HttpStatusCode.Created), cancellation: ct);

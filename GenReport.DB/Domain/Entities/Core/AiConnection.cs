@@ -67,10 +67,6 @@ namespace GenReport.DB.Domain.Entities.Core
         public DateTime CreatedAt { get; set; }
 
         [Column("updated_at")]
-        [Required]
         public DateTime UpdatedAt { get; set; }
-
-        /// <summary>Navigation property — model endpoints seeded on creation.</summary>
-        public ICollection<AiModelEndpoint> ModelEndpoints { get; set; } = new List<AiModelEndpoint>();
     }
 }

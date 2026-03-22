@@ -19,11 +19,6 @@ namespace GenReport.DB.Domain.EntityConfigurations
 
             builder.Property(x => x.CostPer1kOutputTokens)
                 .HasColumnType("decimal(18,8)");
-
-            builder.HasMany(x => x.ModelEndpoints)
-                .WithOne(e => e.AiConnection)
-                .HasForeignKey(e => e.AiConnectionId)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

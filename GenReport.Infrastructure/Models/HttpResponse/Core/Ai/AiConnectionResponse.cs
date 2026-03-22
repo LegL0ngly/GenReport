@@ -18,6 +18,5 @@ namespace GenReport.Infrastructure.Models.HttpResponse.Core.Ai
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public List<AiModelEndpointResponse> ModelEndpoints { get; set; } = [];
     }
 }

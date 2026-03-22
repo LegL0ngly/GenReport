@@ -20,7 +20,6 @@ namespace GenReport.Api.Endpoints.Core.Ai
         public override async Task HandleAsync(CancellationToken ct)
         {
             var connections = await context.AiConnections
-                .Include(c => c.ModelEndpoints)
                 .OrderByDescending(c => c.CreatedAt)
                 .Select(c => new AiConnectionResponse
                 {
@@ -36,17 +35,7 @@ namespace GenReport.Api.Endpoints.Core.Ai
                     CostPer1kOutputTokens = c.CostPer1kOutputTokens,
                     IsActive              = c.IsActive,
                     CreatedAt             = c.CreatedAt,
-                    UpdatedAt             = c.UpdatedAt,
-                    ModelEndpoints        = c.ModelEndpoints.Select(e => new AiModelEndpointResponse
-                    {
-                        Id               = e.Id,
-                        AiConnectionId   = e.AiConnectionId,
-                        EndpointType     = e.EndpointType,
-                        Path             = e.Path,
-                        HttpMethod       = e.HttpMethod,
-                        IsEnabled        = e.IsEnabled,
-                        Notes            = e.Notes
-                    }).ToList()
+                    UpdatedAt             = c.UpdatedAt
                 })
                 .ToListAsync(ct);
 
