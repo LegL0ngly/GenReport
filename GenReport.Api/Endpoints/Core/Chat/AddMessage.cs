@@ -14,6 +14,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
         public override void Configure()
         {
             Post("/chat/sessions/{id}/messages");
+            AllowFileUploads();
         }
 
         public override async Task HandleAsync(AddMessageRequest req, CancellationToken ct)
@@ -30,12 +31,59 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 return;
             }
 
+            var uploadedMediaFiles = new List<GenReport.Domain.Entities.Media.MediaFile>();
+
+            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "chat");
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+            }
+
+            foreach (var file in Files)
+            {
+                var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+                var filePath = Path.Combine(uploadsPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream, ct);
+                }
+
+                var mediaUrl = $"/uploads/chat/{fileName}";
+                
+                var mediaFile = new GenReport.Domain.Entities.Media.MediaFile(
+                    storageUrl: mediaUrl,
+                    fileName: file.FileName,
+                    mimeType: file.ContentType,
+                    size: file.Length
+                );
+                
+                context.MediaFiles.Add(mediaFile);
+                uploadedMediaFiles.Add(mediaFile);
+            }
+
+            if (ValidationFailed)
+            {
+                await SendErrorsAsync(cancellation: ct);
+                return;
+            }
+
             var message = new ChatMessage
             {
                 SessionId = sessionId,
                 Role = req.Role,
-                Content = req.Content
+                Content = req.Content,
+                Attachments = new List<MessageAttachment>()
             };
+
+            foreach (var mediaFile in uploadedMediaFiles)
+            {
+                message.Attachments.Add(new MessageAttachment
+                {
+                    Message = message,
+                    MediaFile = mediaFile
+                });
+            }
 
             context.ChatMessages.Add(message);
             session.UpdatedAt = DateTime.UtcNow; // Touch session

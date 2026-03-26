@@ -23,5 +23,6 @@ namespace GenReport.DB.Domain.Entities.Core
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<MessageReport> Reports { get; set; } = new List<MessageReport>();
+        public ICollection<MessageAttachment> Attachments { get; set; } = new List<MessageAttachment>();
     }
 }

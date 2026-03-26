@@ -22,6 +22,11 @@ namespace GenReport.DB.Domain.EntityConfigurations
                 .WithOne(mr => mr.Message)
                 .HasForeignKey(mr => mr.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(x => x.Attachments)
+                .WithOne(ma => ma.Message)
+                .HasForeignKey(ma => ma.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
