@@ -194,26 +194,30 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-bool shouldCreateDb = !args.Contains("--no-create-db");
-bool shouldRecreateDb = args.Contains("--create-db");
+bool shouldCreateDb = args.Contains("--create-db") || applicationConfiguration.CreateDB;
+bool shouldRecreateDb = args.Contains("--recreate-db") || applicationConfiguration.DeleteDB;
 
-if (shouldRecreateDb || applicationConfiguration.DeleteDB)
+if (shouldRecreateDb)
 {
     Log.Information("Deleting database...");
     await DeleteDB(app);
     Log.Information("Database deleted");
+    shouldCreateDb = true; // if we delete, we should also create
 }
 
 // Initialize and seed the database
-if (shouldCreateDb || shouldRecreateDb || applicationConfiguration.CreateDB)
+if (shouldCreateDb)
 {
-    Log.Information("Creating database...");
+    Log.Information("Applying migrations and creating database...");
     await CreateDB(app);
-    Log.Information("Database created");
+    Log.Information("Database setup completed");
 }
 
-
-await SeedDB(app);
+bool shouldSeedDb = args.Contains("--seed-db") || applicationConfiguration.SeedDB;
+if (shouldSeedDb)
+{
+    await SeedDB(app);
+}
 await SeedInMemoryAiStore(app);
 
 
