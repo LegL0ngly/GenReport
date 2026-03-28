@@ -9,13 +9,9 @@ namespace GenReport.Api.Validations
     {
         public AddMessageRequestValidator()
         {
-            RuleFor(x => x.Role)
+            RuleFor(x => x.Messages)
                 .NotEmpty()
-                .WithMessage("Role is required.");
-
-            RuleFor(x => x.Content)
-                .NotEmpty()
-                .WithMessage("Content is required.");
+                .WithMessage("Messages list cannot be empty.");
 
             RuleFor(x => x.Attachments)
                 .Must(attachments => attachments == null || attachments.Count <= 2)
@@ -26,7 +22,6 @@ namespace GenReport.Api.Validations
                 "image/jpeg", "image/png", "image/gif", "image/webp",
                 "application/pdf", "text/plain", "application/msword", 
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "video/mp4", "audio/mpeg"
             };
 
             RuleForEach(x => x.Attachments)
