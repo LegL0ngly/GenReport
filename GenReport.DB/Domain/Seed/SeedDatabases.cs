@@ -16,7 +16,7 @@ namespace GenReport.DB.Domain.Seed
                 
                 var database = new Database
                 {
-                    Name = "GenReportDB",
+                    Name = "genreport",
                     DatabaseAlias = "krisDB",
                     Provider = DbProvider.NpgSql,
                     Type = DatabaseType.PostgreSQL.ToString(),

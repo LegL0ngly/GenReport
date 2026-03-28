@@ -34,6 +34,7 @@ namespace GenReport.Api.Endpoints.Core.Ai
                     CostPer1kInputTokens  = c.CostPer1kInputTokens,
                     CostPer1kOutputTokens = c.CostPer1kOutputTokens,
                     IsActive              = c.IsActive,
+                    IsDefault             = c.IsDefault,
                     CreatedAt             = c.CreatedAt,
                     UpdatedAt             = c.UpdatedAt
                 })

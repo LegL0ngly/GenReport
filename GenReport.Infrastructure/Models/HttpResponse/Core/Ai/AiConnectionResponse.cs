@@ -16,6 +16,7 @@ namespace GenReport.Infrastructure.Models.HttpResponse.Core.Ai
         public decimal? CostPer1kInputTokens { get; set; }
         public decimal? CostPer1kOutputTokens { get; set; }
         public bool IsActive { get; set; }
+        public bool IsDefault { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

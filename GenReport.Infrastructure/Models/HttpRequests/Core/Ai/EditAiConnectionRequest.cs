@@ -13,5 +13,6 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Ai
         public decimal? CostPer1kInputTokens { get; set; }
         public decimal? CostPer1kOutputTokens { get; set; }
         public bool? IsActive { get; set; }
+        public bool? IsDefault { get; set; }
     }
 }

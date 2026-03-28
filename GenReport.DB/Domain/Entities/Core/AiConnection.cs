@@ -62,6 +62,13 @@ namespace GenReport.DB.Domain.Entities.Core
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
+        /// <summary>
+        /// Whether this is the default connection for this provider.
+        /// Only one connection per provider should have IsDefault = true.
+        /// </summary>
+        [Column("is_default")]
+        public bool IsDefault { get; set; } = false;
+
         [Column("created_at")]
         [Required]
         public DateTime CreatedAt { get; set; }

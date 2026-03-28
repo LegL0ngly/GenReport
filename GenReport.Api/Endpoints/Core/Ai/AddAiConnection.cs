@@ -27,17 +27,15 @@ namespace GenReport.Api.Endpoints.Core.Ai
 
         public override async Task HandleAsync(AddAiConnectionRequest req, CancellationToken ct)
         {
-            // Prevent duplicate providers (one config per provider)
-            var exists = await context.AiConnections
-                .AnyAsync(c => c.Provider == req.Provider, ct);
-
-            if (exists)
+            // If this connection is marked as default, unset any existing default for the same provider.
+            if (req.IsDefault)
             {
-                await SendAsync(new HttpResponse<AiConnectionResponse>(
-                    HttpStatusCode.Conflict,
-                    $"An AI connection for provider '{req.Provider}' already exists.",
-                    "ERR_CONFLICT", []), cancellation: ct);
-                return;
+                var existingDefaults = await context.AiConnections
+                    .Where(c => c.Provider == req.Provider && c.IsDefault)
+                    .ToListAsync(ct);
+
+                foreach (var existing in existingDefaults)
+                    existing.IsDefault = false;
             }
 
             var encryptedKey = encryptorFactory
@@ -57,6 +55,7 @@ namespace GenReport.Api.Endpoints.Core.Ai
                 CostPer1kInputTokens  = req.CostPer1kInputTokens,
                 CostPer1kOutputTokens = req.CostPer1kOutputTokens,
                 IsActive              = req.IsActive,
+                IsDefault             = req.IsDefault,
                 CreatedAt             = DateTime.UtcNow,
                 UpdatedAt             = DateTime.UtcNow,
             };
@@ -80,6 +79,7 @@ namespace GenReport.Api.Endpoints.Core.Ai
                 CostPer1kInputTokens  = connection.CostPer1kInputTokens,
                 CostPer1kOutputTokens = connection.CostPer1kOutputTokens,
                 IsActive              = connection.IsActive,
+                IsDefault             = connection.IsDefault,
                 CreatedAt             = connection.CreatedAt,
                 UpdatedAt             = connection.UpdatedAt
             };

@@ -49,6 +49,21 @@ namespace GenReport.Api.Endpoints.Core.Ai
             if (req.CostPer1kOutputTokens.HasValue)connection.CostPer1kOutputTokens = req.CostPer1kOutputTokens;
             if (req.IsActive.HasValue)             connection.IsActive              = req.IsActive.Value;
 
+            // If promoting this connection to default, unset any other default for the same provider.
+            if (req.IsDefault.HasValue)
+            {
+                if (req.IsDefault.Value && !connection.IsDefault)
+                {
+                    var otherDefaults = await context.AiConnections
+                        .Where(c => c.Provider == connection.Provider && c.IsDefault && c.Id != connection.Id)
+                        .ToListAsync(ct);
+
+                    foreach (var other in otherDefaults)
+                        other.IsDefault = false;
+                }
+                connection.IsDefault = req.IsDefault.Value;
+            }
+
             connection.UpdatedAt = DateTime.UtcNow;
 
             context.AiConnections.Update(connection);

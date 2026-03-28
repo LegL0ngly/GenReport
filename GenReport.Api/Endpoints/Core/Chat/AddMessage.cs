@@ -54,6 +54,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 var mediaFile = new GenReport.Domain.Entities.Media.MediaFile(
                     storageUrl: mediaUrl,
                     fileName: file.FileName,
+                    
                     mimeType: file.ContentType,
                     size: file.Length
                 );

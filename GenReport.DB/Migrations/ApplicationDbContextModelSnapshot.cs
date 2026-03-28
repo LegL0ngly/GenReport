@@ -126,6 +126,10 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
                     b.Property<int?>("MaxTokens")
                         .HasColumnType("integer")
                         .HasColumnName("max_tokens");
@@ -159,50 +163,6 @@ namespace GenReport.DB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ai_connections");
-                });
-
-            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiModelEndpoint", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("AiConnectionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ai_connection_id");
-
-                    b.Property<int>("EndpointType")
-                        .HasColumnType("integer")
-                        .HasColumnName("endpoint_type");
-
-                    b.Property<string>("HttpMethod")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("http_method");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_enabled");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("notes");
-
-                    b.Property<string>("Path")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("path");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AiConnectionId");
-
-                    b.ToTable("ai_model_endpoints");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatMessage", b =>
@@ -369,6 +329,35 @@ namespace GenReport.DB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("databases");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.MessageAttachment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("MediaFileId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("media_file_id");
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("message_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaFileId");
+
+                    b.HasIndex("MessageId");
+
+                    b.ToTable("message_attachments");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.MessageReport", b =>
@@ -735,17 +724,6 @@ namespace GenReport.DB.Migrations
                     b.Navigation("Module");
                 });
 
-            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiModelEndpoint", b =>
-                {
-                    b.HasOne("GenReport.DB.Domain.Entities.Core.AiConnection", "AiConnection")
-                        .WithMany("ModelEndpoints")
-                        .HasForeignKey("AiConnectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AiConnection");
-                });
-
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatMessage", b =>
                 {
                     b.HasOne("GenReport.DB.Domain.Entities.Core.ChatSession", "Session")
@@ -766,6 +744,25 @@ namespace GenReport.DB.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.MessageAttachment", b =>
+                {
+                    b.HasOne("GenReport.Domain.Entities.Media.MediaFile", "MediaFile")
+                        .WithMany()
+                        .HasForeignKey("MediaFileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.ChatMessage", "Message")
+                        .WithMany("Attachments")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MediaFile");
+
+                    b.Navigation("Message");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.MessageReport", b =>
@@ -841,13 +838,10 @@ namespace GenReport.DB.Migrations
                     b.Navigation("Database");
                 });
 
-            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiConnection", b =>
-                {
-                    b.Navigation("ModelEndpoints");
-                });
-
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatMessage", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Reports");
                 });
 
