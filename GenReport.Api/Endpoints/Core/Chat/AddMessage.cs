@@ -145,11 +145,36 @@ namespace GenReport.Api.Endpoints.Core.Chat
             HttpContext.Response.StatusCode = 200;
             HttpContext.Response.Headers.CacheControl = "no-cache";
             HttpContext.Response.Headers.Connection = "keep-alive";
-            HttpContext.Response.ContentType = "text/x-vercel-ai-data-stream; charset=utf-8";
+            HttpContext.Response.Headers["X-Accel-Buffering"] = "no";
+            HttpContext.Response.ContentType = "text/event-stream; charset=utf-8";
             await HttpContext.Response.StartAsync(CancellationToken.None);
 
             try
             {
+                static string ToSseDataLine(string json) => $"data: {json}\n\n";
+
+                async Task WriteSseAsync(object payload)
+                {
+                    var json = System.Text.Json.JsonSerializer.Serialize(payload);
+                    await HttpContext.Response.WriteAsync(ToSseDataLine(json), CancellationToken.None);
+                    await HttpContext.Response.Body.FlushAsync(CancellationToken.None);
+                }
+
+                var assistantMessageId = Guid.NewGuid().ToString("N");
+                var textPartId = Guid.NewGuid().ToString("N");
+
+                await WriteSseAsync(new
+                {
+                    type = "start",
+                    messageId = assistantMessageId
+                });
+
+                await WriteSseAsync(new
+                {
+                    type = "text-start",
+                    id = textPartId
+                });
+
                 for (int i = 0; i < words.Length; i++)
                 {
                     if (ct.IsCancellationRequested) break; // check manually instead
@@ -159,16 +184,25 @@ namespace GenReport.Api.Endpoints.Core.Chat
                     var chunk = words[i] + (i < words.Length - 1 ? " " : "");
                     actualStreamedContent.Append(chunk);
 
-                    var serializedChunk = System.Text.Json.JsonSerializer.Serialize(chunk);
-                    await HttpContext.Response.WriteAsync($"0:{serializedChunk}\n", CancellationToken.None);
-                    await HttpContext.Response.Body.FlushAsync(CancellationToken.None);
+                    await WriteSseAsync(new
+                    {
+                        type = "text-delta",
+                        id = textPartId,
+                        delta = chunk
+                    });
                 }
 
-                // ← Send finish signal so the SDK knows the stream is done
-                await HttpContext.Response.WriteAsync(
-                    "d:{\"finishReason\":\"stop\",\"usage\":{\"promptTokens\":0,\"completionTokens\":0}}\n",
-                    CancellationToken.None);
-                await HttpContext.Response.Body.FlushAsync(CancellationToken.None);
+                await WriteSseAsync(new
+                {
+                    type = "text-end",
+                    id = textPartId
+                });
+
+                await WriteSseAsync(new
+                {
+                    type = "finish",
+                    finishReason = "stop"
+                });
             }
             catch (Exception ex) when (ex is OperationCanceledException || ex is IOException)
             {
