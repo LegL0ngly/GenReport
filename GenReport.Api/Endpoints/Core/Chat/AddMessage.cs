@@ -138,7 +138,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
             {
                 assistantContent = "hey how're you doing";
             }
-
+  
             var words = assistantContent.Split(' ');
             var actualStreamedContent = new System.Text.StringBuilder();
 

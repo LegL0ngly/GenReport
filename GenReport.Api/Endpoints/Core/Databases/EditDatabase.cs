@@ -44,7 +44,8 @@ namespace GenReport.Api.Endpoints.Core.Databases
             if (!string.IsNullOrEmpty(req.Name)) existingDb.Name = req.Name;
             if (!string.IsNullOrEmpty(req.DatabaseAlias)) existingDb.DatabaseAlias = req.DatabaseAlias;
             if (!string.IsNullOrEmpty(req.DatabaseType)) existingDb.Type = req.DatabaseType;
-            if (!string.IsNullOrEmpty(req.ConnectionString)) existingDb.ConnectionString = req.ConnectionString;
+            if (!string.IsNullOrEmpty(req.ConnectionString))
+                existingDb.ConnectionString = encryptorFactory.GetEncryptor(CredentialType.ConnectionString).Encrypt(req.ConnectionString);
             if (req.HostName != null) existingDb.ServerAddress = req.HostName;
             if (req.Port.HasValue) existingDb.Port = req.Port.Value;
             if (req.UserName != null) existingDb.Username = req.UserName;

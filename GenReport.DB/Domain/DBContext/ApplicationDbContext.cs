@@ -95,8 +95,18 @@ namespace GenReport.Domain.DBContext
         /// </remarks>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.HasPostgresExtension("vector");
-            modelBuilder.ApplyAllConfigurations(); 
+            var providerName = Database.ProviderName ?? string.Empty;
+            if (providerName.Contains("Npgsql"))
+            {
+                modelBuilder.HasPostgresExtension("vector");
+            }
+            else
+            {
+                modelBuilder.Ignore<SchemaObject>();
+                modelBuilder.Ignore<RoutineObject>();
+            }
+
+            modelBuilder.ApplyAllConfigurations();
             base.OnModelCreating(modelBuilder);
         }
     }

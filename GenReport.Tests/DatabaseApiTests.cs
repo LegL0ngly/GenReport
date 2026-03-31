@@ -4,16 +4,18 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
+using System.Text.Json;
 using GenReport.Domain.DBContext;
 using GenReport.Infrastructure.Models.HttpRequests.Core.Databases;
 using GenReport.Infrastructure.Models.HttpResponse.Core.Databases;
 using GenReport.Infrastructure.Models.Shared;
-using GenReport.Services.Interfaces;
-using Moq;
 using GenReport.Domain.Entities.Onboarding;
 using GenReport.DB.Domain.Entities.Core;
 using GenReport.DB.Domain.Enums;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using GenReport.Infrastructure.Security.Encryption;
+using GenReport.Infrastructure.Models.HttpRequests.Onboarding;
 
 namespace GenReport.Tests
 {
@@ -22,15 +24,12 @@ namespace GenReport.Tests
     {
         private WebApplicationFactory<Program> _factory;
         private HttpClient _client;
-        private Mock<ICurrentUserService> _userServiceMock;
         private long _testUserId;
         private string _dbName;
 
         [SetUp]
         public async Task Setup()
         {
-            _userServiceMock = new Mock<ICurrentUserService>();
-            _userServiceMock.Setup(s => s.IsAuthenticated()).Returns(true);
             _dbName = "GenReportTestDb_" + Guid.NewGuid().ToString();
 
             _factory = new WebApplicationFactory<Program>()
@@ -42,8 +41,6 @@ namespace GenReport.Tests
                             new DbContextOptionsBuilder<ApplicationDbContext>()
                                 .UseInMemoryDatabase(_dbName)
                                 .Options));
-
-                        services.Replace(ServiceDescriptor.Singleton<ICurrentUserService>(_ => _userServiceMock.Object));
                     });
                 });
 
@@ -67,10 +64,36 @@ namespace GenReport.Tests
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
             _testUserId = user.Id;
-
-            _userServiceMock.Setup(s => s.LoggedInUserId()).Returns(_testUserId);
             
             Assert.That(_testUserId, Is.GreaterThan(0));
+
+            var loginResponse = await _client.PostAsJsonAsync("/login", new LoginRequest
+            {
+                Email = "test@example.com",
+                Password = "TestPassword123"
+            });
+
+            var loginJson = await loginResponse.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(loginJson);
+
+            var root = doc.RootElement;
+            var success = root.TryGetProperty("successResponse", out var sr) ? sr :
+                          root.TryGetProperty("SuccessResponse", out sr) ? sr :
+                          default;
+            Assert.That(success.ValueKind, Is.EqualTo(JsonValueKind.Object));
+
+            var data = success.TryGetProperty("data", out var d) ? d :
+                       success.TryGetProperty("Data", out d) ? d :
+                       default;
+            Assert.That(data.ValueKind, Is.EqualTo(JsonValueKind.Object));
+
+            var tokenEl = data.TryGetProperty("token", out var t) ? t :
+                          data.TryGetProperty("Token", out t) ? t :
+                          default;
+            var token = tokenEl.GetString();
+            Assert.That(token, Is.Not.Null.And.Not.Empty);
+
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
         [TearDown]
@@ -106,6 +129,43 @@ namespace GenReport.Tests
             var result = await response.Content.ReadFromJsonAsync<HttpResponse<string>>();
             Assert.IsNotNull(result?.SuccessResponse);
             Assert.That(result.SuccessResponse.Message, Does.Contain("successfully added"));
+        }
+
+        [Test]
+        public async Task AddDatabase_EncryptsConnectionStringAndPassword()
+        {
+            var request = new AddDatabaseRequest
+            {
+                Name = "Test DB",
+                DatabaseType = "PostgreSQL",
+                Provider = DbProvider.NpgSql,
+                ConnectionString = "Host=localhost;Database=test",
+                Description = "Integration Test DB",
+                Password = "pwd",
+                Port = 5432,
+                HostName = "127.0.0.1",
+                UserName = "user",
+                DatabaseName = "test"
+            };
+
+            var response = await _client.PostAsJsonAsync("/connections", request);
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var encryptorFactory = scope.ServiceProvider.GetRequiredService<ICredentialEncryptorFactory>();
+
+            var db = await context.Databases.SingleAsync();
+
+            Assert.That(db.ConnectionString, Is.Not.EqualTo(request.ConnectionString));
+            Assert.That(db.Password, Is.Not.EqualTo(request.Password));
+
+            var decryptedConn = encryptorFactory.GetEncryptor(CredentialType.ConnectionString).Decrypt(db.ConnectionString);
+            var decryptedPwd = encryptorFactory.GetEncryptor(CredentialType.Password).Decrypt(db.Password);
+
+            Assert.That(decryptedConn, Is.EqualTo(request.ConnectionString));
+            Assert.That(decryptedPwd, Is.EqualTo(request.Password));
         }
 
         [Test]

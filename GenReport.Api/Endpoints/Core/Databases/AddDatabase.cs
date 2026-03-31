@@ -39,12 +39,17 @@ namespace GenReport.Api.Endpoints.Core.Databases
                 ? string.Empty
                 : passwordEncryptor.Encrypt(req.Password);
 
+            var connectionStringEncryptor = encryptorFactory.GetEncryptor(CredentialType.ConnectionString);
+            var encryptedConnectionString = string.IsNullOrEmpty(req.ConnectionString)
+                ? string.Empty
+                : connectionStringEncryptor.Encrypt(req.ConnectionString);
+
             var newDatabase = new Database
             {
                 Name = req.DatabaseName,
                 DatabaseAlias = req.Name,
                 Type = req.DatabaseType,
-                ConnectionString = req.ConnectionString ?? string.Empty,
+                ConnectionString = encryptedConnectionString,
                 ServerAddress = req.HostName ?? string.Empty,
                 Port = req.Port,
                 Username = req.UserName ?? string.Empty,
