@@ -12,9 +12,18 @@ namespace GenReport.DB.Domain.Interfaces
 {
     public interface IApplicationDbContext
     {
-        public DbSet<User> Users { get; set; }
-        public DbSet<MediaFile> MediaFiles { get; set; }
-        public DbSet<Database> Databases { get; set; }
-        public DbSet<Query> Queries { get; set; }
+        DbSet<User> Users { get; set; }
+        DbSet<MediaFile> MediaFiles { get; set; }
+        DbSet<Database> Databases { get; set; }
+        DbSet<Query> Queries { get; set; }
+        DbSet<Report> Reports { get; set; }
+        DbSet<AiConnection> AiConnections { get; set; }
+        DbSet<ChatSession> ChatSessions { get; set; }
+        DbSet<ChatMessage> ChatMessages { get; set; }
+        DbSet<MessageReport> MessageReports { get; set; }
+        DbSet<MessageAttachment> MessageAttachments { get; set; }
+        DbSet<SchemaObject> SchemaObjects { get; set; }
+        DbSet<RoutineObject> RoutineObjects { get; set; }
+        DbSet<AiConfig> AiConfigs { get; set; }
     }
 }
