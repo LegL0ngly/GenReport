@@ -36,13 +36,13 @@ namespace GenReport.DB.Domain.Entities.Business
         /// Flag indicating if the mapping was created (consider using a DateTime instead).
         /// </summary>
         [Column("created_at")] // Column name mapping
-        public bool CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         /// <summary>
         /// Flag indicating if the mapping was updated (consider using a DateTime instead).
         /// </summary>
         [Column("updated_at")] // Column name mapping
-        public bool UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
         #endregion
     }
 }

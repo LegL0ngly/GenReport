@@ -66,6 +66,7 @@ builder.Services.AddScoped<ITestConnectionService, TestConnectionService>();
 builder.Services.AddSingleton<IChatCompletionFactory, ChatCompletionFactory>();
 builder.Services.AddScoped<ITestAiConnectionService, TestAiConnectionService>();
 builder.Services.AddScoped<IIntentClassifierService, IntentClassifierService>();
+builder.Services.AddScoped<ITokenCountService, TokenCountService>();
 
 // In-memory AI store (models + default configs, seeded at startup)
 var inMemoryAiStore = new InMemoryAiStore();

@@ -128,7 +128,30 @@ namespace GenReport.Api.Endpoints.Core.Chat
 
 
             string assistantContent;
-            if (intentEnum == ChatIntent.OutOfScope || intentEnum == ChatIntent.Sensitive)
+            
+            // Calculate approximate context length in characters (rough estimation for tokens)
+            var currentContextLength = await context.ChatMessages
+                .Where(m => m.SessionId == sessionId)
+                .SumAsync(m => m.Content.Length, cancellationToken: ct);
+            
+            currentContextLength += content.Length;
+
+            int maxContextTokens = session.AiConnection?.Provider.ToLower() switch
+            {
+                "openai" => 128000,
+                "anthropic" => 200000,
+                "gemini" => 1000000,
+                _ => 256000
+            };
+            
+            // Assuming average of 4 chars per token
+            int maxContextChars = maxContextTokens * 4;
+
+            if (currentContextLength > maxContextChars)
+            {
+                assistantContent = "Context length exceeded. Please open a new chat to continue.";
+            }
+            else if (intentEnum == ChatIntent.OutOfScope || intentEnum == ChatIntent.Sensitive)
             {
                 assistantContent = intentEnum == ChatIntent.Sensitive
                     ? "I cannot process requests involving sensitive information, passwords, credentials, or personal data."
