@@ -66,6 +66,7 @@ builder.Services.AddScoped<ITestConnectionService, TestConnectionService>();
 builder.Services.AddSingleton<IChatCompletionFactory, ChatCompletionFactory>();
 builder.Services.AddScoped<ITestAiConnectionService, TestAiConnectionService>();
 builder.Services.AddScoped<IIntentClassifierService, IntentClassifierService>();
+builder.Services.AddScoped<ITokenCountService, TokenCountService>();
 
 // In-memory AI store (models + default configs, seeded at startup)
 var inMemoryAiStore = new InMemoryAiStore();
@@ -82,6 +83,15 @@ builder.Services.AddSingleton<ICredentialEncryptorFactory>(sp =>
 builder.Services.AddHttpClient("GoService", client =>
 {
     client.BaseAddress = new Uri($"http://{applicationConfiguration.GoHost}:{applicationConfiguration.GoPort}");
+});
+builder.Services.AddHttpClient("Anthropic", client =>
+{
+    client.BaseAddress = new Uri("https://api.anthropic.com");
+    client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+});
+builder.Services.AddHttpClient("Gemini", client =>
+{
+    client.BaseAddress = new Uri("https://generativelanguage.googleapis.com");
 });
 builder.Services.AddHttpContextAccessor();
 
