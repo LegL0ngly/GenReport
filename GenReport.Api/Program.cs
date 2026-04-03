@@ -1,4 +1,5 @@
 using FastEndpoints;
+using GenReport.DB.Domain.Interfaces;
 using GenReport.DB.Domain.Seed;
 using GenReport.Domain.DBContext;
 using GenReport.Domain.Interfaces;
@@ -44,6 +45,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
             npgSqlOptions.CommandTimeout(applicationConfiguration.CommandTimeOut);
             npgSqlOptions.UseVector();
         }));
+builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
 // Add FastEndpoints
 builder.Services.AddFastEndpoints();
