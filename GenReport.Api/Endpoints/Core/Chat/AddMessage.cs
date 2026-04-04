@@ -104,6 +104,31 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 uploadedMediaFiles.Add(mediaFile);
             }
 
+            // Inject System Message if this is the first message in the session
+            var existingMessagesCount = await context.ChatMessages.CountAsync(m => m.SessionId == sessionId, ct);
+            if (existingMessagesCount == 0 && session.AiConnection != null)
+            {
+                var systemConfig = await context.AiConfigs
+                    .Where(c => c.AiConnectionId == session.AiConnection.Id 
+                                && c.Type == AiConfigType.ChatSystemPrompt 
+                                && c.IsActive)
+                    .OrderByDescending(c => c.Version)
+                    .FirstOrDefaultAsync(ct);
+
+                if (systemConfig != null)
+                {
+                    var systemMessage = new ChatMessage
+                    {
+                        SessionId = sessionId,
+                        Role = "system",
+                        Content = systemConfig.Value,
+                        Intent = "System",
+                        Attachments = []
+                    };
+                    context.ChatMessages.Add(systemMessage);
+                }
+            }
+
             // Save User Message
             var message = new ChatMessage
             {
