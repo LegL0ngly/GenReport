@@ -123,7 +123,7 @@ namespace GenReport.Tests.Endpoints.Core.Ai.Configs
 
             var response = await _client.PostAsJsonAsync($"/ai/connections/{_aiConnectionId}/configs", request);
 
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
             var data = doc.RootElement.GetProperty("successResponse").GetProperty("data");
