@@ -17,6 +17,7 @@ namespace GenReport.Tests
         private ApplicationDbContext _dbContext;
         private TokenCountService _tokenCountService;
         private Mock<ILogger<TokenCountService>> _loggerMock;
+        private Mock<IHttpClientFactory> _httpClientFactoryMock;
 
         [SetUp]
         public void Setup()
@@ -27,9 +28,13 @@ namespace GenReport.Tests
 
             _dbContext = new ApplicationDbContext(options);
             _loggerMock = new Mock<ILogger<TokenCountService>>();
+            _httpClientFactoryMock = new Mock<IHttpClientFactory>();
+            _httpClientFactoryMock
+                .Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(new HttpClient());
 
             // The DB context is injected to the service
-            _tokenCountService = new TokenCountService(_dbContext, _loggerMock.Object);
+            _tokenCountService = new TokenCountService(_dbContext, _loggerMock.Object, _httpClientFactoryMock.Object);
         }
 
         [TearDown]
@@ -65,7 +70,7 @@ namespace GenReport.Tests
         }
 
         [Test]
-        public async Task GetSessionTokenCountAsync_UsesTiktokenForOpenAI()
+        public async Task GetSessionTokenCountAsync_UsesLocalEstimationForOpenAI()
         {
             var aiConnection = new AiConnection
             {
@@ -94,7 +99,7 @@ namespace GenReport.Tests
             Assert.IsTrue(response.TotalTokens > 0, "Tokens should be calculated.");
             Assert.AreEqual(100, response.MaxTokens);
             Assert.IsFalse(response.IsExceeded, "Tokens should be under limit.");
-            Assert.AreEqual("Local Tiktoken (Primary)", response.CalculationMethod);
+            Assert.AreEqual("OpenAI Local Estimation", response.CalculationMethod);
         }
 
         [Test]
@@ -127,7 +132,7 @@ namespace GenReport.Tests
             Assert.IsTrue(response.TotalTokens > 0);
             Assert.IsTrue(response.IsExceeded, "Tokens should exceed the artifically low limit.");
             Assert.AreEqual(10, response.MaxTokens);
-            Assert.AreEqual("Local Tiktoken (Fallback)", response.CalculationMethod);
+            Assert.AreEqual("Local Estimation (Fallback)", response.CalculationMethod);
         }
     }
 }
