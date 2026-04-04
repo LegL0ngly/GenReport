@@ -1,4 +1,5 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,7 +16,7 @@ namespace GenReport.DB.Domain.Entities.Core
     /// Represents a database entity.
     /// </summary>
     [Table("databases")]
-    public class Database : Entity<long>, IAggregateRoot
+    public class Database : BaseEntity
     {
         /// <summary>
         /// Gets or sets the name of the database.
@@ -74,22 +75,6 @@ namespace GenReport.DB.Domain.Entities.Core
         /// </summary>
         [Column("password")]
         public required string Password { get; set; }
-
-        /// <summary>
-        /// Gets or sets the creation date of the database.
-        /// </summary>
-        [Column("created_at")]
-        [Required]
-        [DataType(DataType.DateTime)]
-        public DateTime CreatedAt { get; set; }
-
-        /// <summary>
-        /// Gets or sets the last modified date of the database.
-        /// </summary>
-        [Column("updated_at")]
-        [Required]
-        [DataType(DataType.DateTime)]
-        public DateTime UpdatedAt { get; set; }
 
         /// <summary>
         /// Gets or sets the status of the database (e.g., active, inactive).

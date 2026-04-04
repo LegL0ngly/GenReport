@@ -1,11 +1,12 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using GenReport.Domain.Entities.Onboarding;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GenReport.DB.Domain.Entities.Core
 {
     [Table("chat_sessions")]
-    public class ChatSession : Entity<long>, IAggregateRoot
+    public class ChatSession : BaseEntity
     {
         [Column("user_id")]
         public long UserId { get; set; }
@@ -27,12 +28,6 @@ namespace GenReport.DB.Domain.Entities.Core
 
         [System.Text.Json.Serialization.JsonIgnore]
         public AiConnection? AiConnection { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
     }

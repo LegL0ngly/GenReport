@@ -2,6 +2,8 @@ using CoreDdd.Domain;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+using GenReport.DB.Domain.Common;
+
 namespace GenReport.DB.Domain.Entities.Core
 {
     /// <summary>
@@ -11,7 +13,7 @@ namespace GenReport.DB.Domain.Entities.Core
     /// Only one row per Type + AiConnectionId + ModelId should have <see cref="IsActive"/> = true.
     /// </summary>
     [Table("ai_configs")]
-    public class AiConfig : Entity<long>, IAggregateRoot
+    public class AiConfig : BaseEntity
     {
         /// <summary>The type of this configuration (e.g. IntentClassifier, ChatSystemPrompt).</summary>
         [Column("type")]
@@ -43,11 +45,5 @@ namespace GenReport.DB.Domain.Entities.Core
         [Column("version")]
         public int Version { get; set; } = 1;
 
-        [Column("created_at")]
-        [Required]
-        public DateTime CreatedAt { get; set; }
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; }
     }
 }

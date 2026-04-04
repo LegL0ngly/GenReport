@@ -1,11 +1,12 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GenReport.DB.Domain.Entities.Core
 {
     [Table("chat_messages")]
-    public class ChatMessage : Entity<long>, IAggregateRoot
+    public class ChatMessage : BaseEntity
     {
         /// <summary>Classified intent of the message (set only for user messages). Null for assistant messages.</summary>
         [Column("intent")]
@@ -25,9 +26,6 @@ namespace GenReport.DB.Domain.Entities.Core
 
         [Column("content")]
         public required string Content { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<MessageReport> Reports { get; set; } = new List<MessageReport>();
         public ICollection<MessageAttachment> Attachments { get; set; } = new List<MessageAttachment>();

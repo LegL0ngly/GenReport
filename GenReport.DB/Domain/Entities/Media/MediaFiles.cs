@@ -1,4 +1,5 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -11,7 +12,7 @@ namespace GenReport.Domain.Entities.Media
     public class  MediaFile(
         string? storageUrl, 
         string fileName, 
-        string mimeType, long size) : Entity<long>, IAggregateRoot
+        string mimeType, long size) : BaseEntity
     {
       
 
@@ -41,16 +42,5 @@ namespace GenReport.Domain.Entities.Media
         [Column("size")] // Column name mapping
         public long Size { get; set; } = size;
 
-        /// <summary>
-        /// The date and time the media file was created.
-        /// </summary>
-        [Column("created_at")] // Column name mapping
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;  // Initialize with current UTC time
-
-        /// <summary>
-        /// The date and time the media file was last updated.
-        /// </summary>
-        [Column("updated_at")] // Column name mapping
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;  // Initialize with current UTC time
     }
 }

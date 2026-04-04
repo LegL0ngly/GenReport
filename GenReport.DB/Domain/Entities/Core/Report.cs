@@ -1,4 +1,5 @@
 ﻿using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using GenReport.Domain.Entities.Media;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace GenReport.DB.Domain.Entities.Core
     /// <seealso cref="CoreDdd.Domain.Entity<System.Int64>" />
     /// <seealso cref="CoreDdd.Domain.IAggregateRoot" />
     [Table("reports")]
-    public class Report : Entity<long> , IAggregateRoot
+    public class Report : BaseEntity
     {
         /// <summary>
         /// Gets or sets the name.
@@ -72,17 +73,11 @@ namespace GenReport.DB.Domain.Entities.Core
         /// <value>
         /// The created at.
         /// </value>
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        /// <summary>
         /// Gets or sets the updated at.
         /// </summary>
         /// <value>
         /// The updated at.
         /// </value>
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; }
-        /// <summary>
         /// Gets or sets the no of rows.
         /// </summary>
         /// <value>

@@ -1,11 +1,12 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using GenReport.Domain.Entities.Media;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GenReport.DB.Domain.Entities.Core
 {
     [Table("message_attachments")]
-    public class MessageAttachment : Entity<long>, IAggregateRoot
+    public class MessageAttachment : BaseEntity
     {
         [Column("message_id")]
         public long MessageId { get; set; }
@@ -21,7 +22,5 @@ namespace GenReport.DB.Domain.Entities.Core
         public MediaFile MediaFile { get; set; }
 #pragma warning restore CS8618
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

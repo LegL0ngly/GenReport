@@ -1,4 +1,5 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using Pgvector;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +10,7 @@ namespace GenReport.DB.Domain.Entities.Core
     /// Represents a routine object (stored procedure or function) from a database with its vector embedding.
     /// </summary>
     [Table("routine_objects")]
-    public class RoutineObject : Entity<long>, IAggregateRoot
+    public class RoutineObject : BaseEntity
     {
         /// <summary>
         /// Gets or sets the database ID to which this routine object belongs.

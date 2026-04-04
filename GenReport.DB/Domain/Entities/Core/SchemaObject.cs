@@ -1,4 +1,5 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using Pgvector;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +10,7 @@ namespace GenReport.DB.Domain.Entities.Core
     /// Represents a schema object (table or view) from a database with its vector embedding.
     /// </summary>
     [Table("schema_objects")]
-    public class SchemaObject : Entity<long>, IAggregateRoot
+    public class SchemaObject : BaseEntity
     {
         /// <summary>
         /// Gets or sets the database ID to which this schema object belongs.

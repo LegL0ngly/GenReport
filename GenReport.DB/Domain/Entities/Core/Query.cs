@@ -1,4 +1,5 @@
 ﻿using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using GenReport.Domain.Entities.Onboarding;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace GenReport.DB.Domain.Entities.Core
 {
     [Table("queries")]
-    public class Query : Entity<long>, IAggregateRoot
+    public class Query : BaseEntity
     {
         /// <summary>
         /// The raw text of the query.
@@ -72,10 +73,5 @@ namespace GenReport.DB.Domain.Entities.Core
         /// <value>
         /// The created at.
         /// </value>
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get;set; }
     }
 }

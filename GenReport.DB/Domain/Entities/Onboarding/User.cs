@@ -1,4 +1,5 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using CoreDdd.Domain.Events;
 using GenReport.DB.Domain.Events;
 using GenReport.Domain.Interfaces;
@@ -9,7 +10,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace GenReport.Domain.Entities.Onboarding
 {
     [Table("users")]
-    public class User : Entity<long>, IAggregateRoot, IDeletable
+    public class User : BaseEntity, IDeletable
     {
         [NotMapped]
         private PasswordHasher<object> _passwordHasher;
@@ -68,12 +69,6 @@ namespace GenReport.Domain.Entities.Onboarding
         public string? MiddleName { get; set; }
         [Column("profile_url")]
         public string? ProfileURL { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; }
 
         [Column("is_deleted")]
         public bool IsDeleted { get; set; } = false;

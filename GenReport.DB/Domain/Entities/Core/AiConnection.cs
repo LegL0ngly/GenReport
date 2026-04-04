@@ -1,4 +1,5 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -11,7 +12,7 @@ namespace GenReport.DB.Domain.Entities.Core
     /// The API key is stored encrypted (AES-256-GCM via CredentialEncryptorFactory).
     /// </summary>
     [Table("ai_connections")]
-    public class AiConnection : Entity<long>, IAggregateRoot
+    public class AiConnection : BaseEntity
     {
         /// <summary>Provider name (e.g. OpenAI, Anthropic, Gemini, Ollama).</summary>
         [Column("provider")]
@@ -69,11 +70,5 @@ namespace GenReport.DB.Domain.Entities.Core
         [Column("is_default")]
         public bool IsDefault { get; set; } = false;
 
-        [Column("created_at")]
-        [Required]
-        public DateTime CreatedAt { get; set; }
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; }
     }
 }

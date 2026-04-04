@@ -73,8 +73,8 @@ namespace GenReport.DB.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<bool>("CreatedAt")
-                        .HasColumnType("boolean")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long>("ModuleId")
@@ -85,8 +85,8 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("role_id");
 
-                    b.Property<bool>("UpdatedAt")
-                        .HasColumnType("boolean")
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
@@ -261,6 +261,10 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("session_id");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SessionId");
@@ -283,6 +287,10 @@ namespace GenReport.DB.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("ModelId")
+                        .HasColumnType("text")
+                        .HasColumnName("model_id");
 
                     b.Property<string>("Title")
                         .HasMaxLength(255)
@@ -426,6 +434,10 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("message_id");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MediaFileId");
@@ -454,6 +466,10 @@ namespace GenReport.DB.Migrations
                     b.Property<long>("ReportId")
                         .HasColumnType("bigint")
                         .HasColumnName("report_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id");
 
@@ -583,6 +599,10 @@ namespace GenReport.DB.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
                     b.Property<long>("DatabaseId")
                         .HasColumnType("bigint")
                         .HasColumnName("database_id");
@@ -614,6 +634,10 @@ namespace GenReport.DB.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
                         .HasColumnName("type");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.Property<long?>("database_id")
                         .HasColumnType("bigint");
@@ -637,6 +661,10 @@ namespace GenReport.DB.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
                     b.Property<long>("DatabaseId")
                         .HasColumnType("bigint")
                         .HasColumnName("database_id");
@@ -668,6 +696,10 @@ namespace GenReport.DB.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
                         .HasColumnName("type");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.Property<long?>("database_id")
                         .HasColumnType("bigint");

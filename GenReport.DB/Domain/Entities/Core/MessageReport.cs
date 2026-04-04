@@ -1,10 +1,11 @@
 using CoreDdd.Domain;
+using GenReport.DB.Domain.Common;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GenReport.DB.Domain.Entities.Core
 {
     [Table("message_reports")]
-    public class MessageReport : Entity<long>, IAggregateRoot
+    public class MessageReport : BaseEntity
     {
         [Column("message_id")]
         public long MessageId { get; set; }
@@ -20,7 +21,5 @@ namespace GenReport.DB.Domain.Entities.Core
         public Report Report { get; set; }
 #pragma warning restore CS8618
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
