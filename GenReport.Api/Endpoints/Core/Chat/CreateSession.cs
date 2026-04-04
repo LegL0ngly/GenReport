@@ -36,6 +36,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
             {
                 UserId = userId.Value,
                 Title = req.Title ?? "New Chat",
+                ModelId = req.ModelId,
                 AiConnectionId = defaultConnection?.Id
             };
 

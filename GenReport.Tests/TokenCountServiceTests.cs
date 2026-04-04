@@ -84,6 +84,7 @@ namespace GenReport.Tests
             var session = new ChatSession
             {
                 UserId = 1,
+                ModelId = "gpt-4",
                 AiConnection = aiConnection,
                 Messages = new List<ChatMessage>
                 {
@@ -99,6 +100,38 @@ namespace GenReport.Tests
             Assert.IsTrue(response.TotalTokens > 0, "Tokens should be calculated.");
             Assert.AreEqual(100, response.MaxTokens);
             Assert.IsFalse(response.IsExceeded, "Tokens should be under limit.");
+            Assert.AreEqual("OpenAI Local Estimation", response.CalculationMethod);
+        }
+
+        [Test]
+        public async Task GetSessionTokenCountAsync_UsesSessionModelId_WhenConnectionDefaultModelIsEmpty()
+        {
+            var aiConnection = new AiConnection
+            {
+                Provider = "openAI",
+                ApiKey = "key",
+                DefaultModel = "",
+                MaxTokens = 100,
+                SystemPrompt = "You are a helpful assistant."
+            };
+
+            var session = new ChatSession
+            {
+                UserId = 1,
+                ModelId = "gpt-4o-mini",
+                AiConnection = aiConnection,
+                Messages = new List<ChatMessage>
+                {
+                    new ChatMessage { Role = "user", Content = "Count these tokens please." }
+                }
+            };
+            _dbContext.ChatSessions.Add(session);
+            await _dbContext.SaveChangesAsync();
+
+            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccess);
+            Assert.IsTrue(response.TotalTokens > 0);
             Assert.AreEqual("OpenAI Local Estimation", response.CalculationMethod);
         }
 

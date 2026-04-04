@@ -33,9 +33,13 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                 return new TokenCountResponse
                     { IsSuccess = false, ErrorMessage = "No API key configured for this AI connection." };
 
-            if (string.IsNullOrWhiteSpace(aiConnection.DefaultModel))
+            var modelId = string.IsNullOrWhiteSpace(session.ModelId)
+                ? aiConnection.DefaultModel
+                : session.ModelId;
+
+            if (string.IsNullOrWhiteSpace(modelId))
                 return new TokenCountResponse
-                    { IsSuccess = false, ErrorMessage = "No model ID configured for this AI connection." };
+                    { IsSuccess = false, ErrorMessage = "No model ID configured for this session." };
 
             var provider = aiConnection.Provider?.ToLowerInvariant() ?? "";
 
@@ -53,21 +57,21 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                 {
                     "anthropic" => await CountTokensAnthropicAsync(
                         aiConnection.ApiKey,
-                        aiConnection.DefaultModel,
+                        modelId,
                         aiConnection.SystemPrompt,
                         orderedMessages,
                         ct),
 
                     "gemini" => await CountTokensGeminiAsync(
                         aiConnection.ApiKey,
-                        aiConnection.DefaultModel,
+                        modelId,
                         aiConnection.SystemPrompt,
                         orderedMessages,
                         ct),
 
                     "openai" => await CountTokensOpenAiAsync(
                         aiConnection.ApiKey,
-                        aiConnection.DefaultModel,
+                        modelId,
                         aiConnection.SystemPrompt,
                         orderedMessages,
                         ct),

@@ -18,6 +18,9 @@ namespace GenReport.DB.Domain.Entities.Core
         [Column("title")]
         public string? Title { get; set; }
 
+        [Column("model_id")]
+        public string? ModelId { get; set; }
+
         /// <summary>The AI provider connection used for this session. Null until a connection is assigned.</summary>
         [Column("ai_connection_id")]
         public long? AiConnectionId { get; set; }
