@@ -2,6 +2,7 @@ using CoreDdd.Domain;
 using GenReport.DB.Domain.Common;
 using GenReport.Domain.Entities.Onboarding;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 namespace GenReport.DB.Domain.Entities.Core
 {
@@ -28,6 +29,13 @@ namespace GenReport.DB.Domain.Entities.Core
 
         [System.Text.Json.Serialization.JsonIgnore]
         public AiConnection? AiConnection { get; set; }
+
+        /// <summary>The database selected by the user for this session. Used for schema RAG.</summary>
+        [Column("database_id")]
+        public long? DatabaseId { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public Database? Database { get; set; }
 
         public ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
     }

@@ -288,6 +288,10 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<long?>("DatabaseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("database_id");
+
                     b.Property<string>("ModelId")
                         .HasColumnType("text")
                         .HasColumnName("model_id");
@@ -308,6 +312,8 @@ namespace GenReport.DB.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AiConnectionId");
+
+                    b.HasIndex("DatabaseId");
 
                     b.HasIndex("UserId");
 
@@ -859,6 +865,10 @@ namespace GenReport.DB.Migrations
                         .WithMany()
                         .HasForeignKey("AiConnectionId");
 
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.Database", "Database")
+                        .WithMany()
+                        .HasForeignKey("DatabaseId");
+
                     b.HasOne("GenReport.Domain.Entities.Onboarding.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -866,6 +876,8 @@ namespace GenReport.DB.Migrations
                         .IsRequired();
 
                     b.Navigation("AiConnection");
+
+                    b.Navigation("Database");
 
                     b.Navigation("User");
                 });

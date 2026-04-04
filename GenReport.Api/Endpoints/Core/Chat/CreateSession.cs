@@ -32,12 +32,23 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 .Where(a => a.IsDefault && a.IsActive)
                 .FirstOrDefaultAsync(ct);
 
+            // Resolve database by alias if provided
+            long? databaseId = null;
+            if (!string.IsNullOrWhiteSpace(req.DatabaseConnectionId))
+            {
+                var db = await context.Databases
+                    .Where(d => d.DatabaseAlias == req.DatabaseConnectionId)
+                    .FirstOrDefaultAsync(ct);
+                databaseId = db?.Id;
+            }
+
             var session = new ChatSession
             {
-                UserId = userId.Value,
+                UserId = userId!.Value,
                 Title = req.Title ?? "New Chat",
                 ModelId = req.ModelId,
-                AiConnectionId = defaultConnection?.Id
+                AiConnectionId = defaultConnection?.Id,
+                DatabaseId = databaseId
             };
 
             context.ChatSessions.Add(session);
