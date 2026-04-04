@@ -138,6 +138,13 @@ namespace GenReport.Tests
         [Test]
         public async Task GetSessionTokenCountAsync_FallsBackForAnthropic()
         {
+            var localLlmConnection = new AiConnection
+            {
+                Provider = "ollama",
+                ApiKey = "local",
+                DefaultModel = "llama3.1"
+            };
+
             var aiConnection = new AiConnection
             {
                 Provider = "anthropic",
@@ -156,6 +163,7 @@ namespace GenReport.Tests
                     new ChatMessage { Role = "user", Content = "Tell me a long story about a very adventurous dog that travels space. 12345 67890." }
                 }
             };
+            _dbContext.AiConnections.Add(localLlmConnection);
             _dbContext.ChatSessions.Add(session);
             await _dbContext.SaveChangesAsync();
 
@@ -166,6 +174,37 @@ namespace GenReport.Tests
             Assert.IsTrue(response.IsExceeded, "Tokens should exceed the artifically low limit.");
             Assert.AreEqual(10, response.MaxTokens);
             Assert.AreEqual("Local Estimation (Fallback)", response.CalculationMethod);
+        }
+
+        [Test]
+        public async Task GetSessionTokenCountAsync_Skips_WhenProviderFails_AndNoLocalLlmConfigured()
+        {
+            var aiConnection = new AiConnection
+            {
+                Provider = "anthropic",
+                ApiKey = "key",
+                DefaultModel = "claude-3-opus",
+                MaxTokens = 10
+            };
+
+            var session = new ChatSession
+            {
+                UserId = 1,
+                AiConnection = aiConnection,
+                Messages = new List<ChatMessage>
+                {
+                    new ChatMessage { Role = "user", Content = "This should skip count when provider fails." }
+                }
+            };
+            _dbContext.ChatSessions.Add(session);
+            await _dbContext.SaveChangesAsync();
+
+            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccess);
+            Assert.AreEqual(0, response.TotalTokens);
+            Assert.IsFalse(response.IsExceeded);
+            Assert.AreEqual("Skipped (Provider API Failed, No Local LLM Configured)", response.CalculationMethod);
         }
     }
 }

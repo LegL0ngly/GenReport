@@ -5,7 +5,6 @@ using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Models.AI;
 using GenReport.Infrastructure.Models.HttpRequests.Core.Chat;
 using GenReport.Infrastructure.Models.Shared;
-using GenReport.Infrastructure.Models.Shared;
 using GenReport.Infrastructure.Security.Encryption;
 using GenReport.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +17,8 @@ namespace GenReport.Api.Endpoints.Core.Chat
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
         IIntentClassifierService intentClassifierService,
-        ICredentialEncryptorFactory encryptorFactory) : Endpoint<AddMessageRequest>
+        ICredentialEncryptorFactory encryptorFactory,
+        ITokenCountService tokenCountService) : Endpoint<AddMessageRequest>
     {
         public override void Configure()
         {
@@ -125,33 +125,24 @@ namespace GenReport.Api.Endpoints.Core.Chat
 
             context.ChatMessages.Add(message);
             session.UpdatedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync(ct);
 
+            var tokenCountResponse = await tokenCountService.GetSessionTokenCountAsync(sessionId, ct);
+            if (tokenCountResponse.IsSuccess && tokenCountResponse.IsExceeded)
+            {
+                await SendAsync(
+                    new HttpResponse<ChatMessage>(
+                        HttpStatusCode.BadRequest,
+                        "Context window exceeded. Please start a new chat.",
+                        "ERR_CONTEXT_WINDOW_EXCEEDED",
+                        []),
+                    cancellation: ct);
+                return;
+            }
 
             string assistantContent;
-            
-            // Calculate approximate context length in characters (rough estimation for tokens)
-            var currentContextLength = await context.ChatMessages
-                .Where(m => m.SessionId == sessionId)
-                .SumAsync(m => m.Content.Length, cancellationToken: ct);
-            
-            currentContextLength += content.Length;
 
-            int maxContextTokens = session.AiConnection?.Provider.ToLower() switch
-            {
-                "openai" => 128000,
-                "anthropic" => 200000,
-                "gemini" => 1000000,
-                _ => 256000
-            };
-            
-            // Assuming average of 4 chars per token
-            int maxContextChars = maxContextTokens * 4;
-
-            if (currentContextLength > maxContextChars)
-            {
-                assistantContent = "Context length exceeded. Please open a new chat to continue.";
-            }
-            else if (intentEnum == ChatIntent.OutOfScope || intentEnum == ChatIntent.Sensitive)
+            if (intentEnum == ChatIntent.OutOfScope || intentEnum == ChatIntent.Sensitive)
             {
                 assistantContent = intentEnum == ChatIntent.Sensitive
                     ? "I cannot process requests involving sensitive information, passwords, credentials, or personal data."

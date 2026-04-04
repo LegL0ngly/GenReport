@@ -90,11 +90,23 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex,
-                    "Provider-specific token count failed for provider '{Provider}'. Falling back to local estimation.",
-                    provider);
-                tokenCount = CountTokensLocal(BuildFullText(aiConnection.SystemPrompt, orderedMessages));
-                calculationMethod = "Local Estimation (Fallback)";
+                var hasLocalLlmConfigured = await HasLocalLlmConfiguredAsync(ct);
+                if (!hasLocalLlmConfigured)
+                {
+                    logger.LogWarning(ex,
+                        "Provider-specific token count failed for provider '{Provider}'. Skipping token count because no local LLM is configured.",
+                        provider);
+                    tokenCount = 0;
+                    calculationMethod = "Skipped (Provider API Failed, No Local LLM Configured)";
+                }
+                else
+                {
+                    logger.LogWarning(ex,
+                        "Provider-specific token count failed for provider '{Provider}'. Falling back to local estimation.",
+                        provider);
+                    tokenCount = CountTokensLocal(BuildFullText(aiConnection.SystemPrompt, orderedMessages));
+                    calculationMethod = "Local Estimation (Fallback)";
+                }
             }
 
             var limit = aiConnection.MaxTokens ?? 128000;
@@ -244,6 +256,13 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             return text
                 .Split([' ', '\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries)
                 .Length;
+        }
+
+        private Task<bool> HasLocalLlmConfiguredAsync(CancellationToken ct)
+        {
+            return dbContext.AiConnections.AnyAsync(
+                a => a.IsActive && (a.Provider.ToLower() == "ollama" || a.Provider.ToLower() == "custom"),
+                ct);
         }
 
         // -------------------------------------------------------------------------
