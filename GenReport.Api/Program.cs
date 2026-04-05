@@ -5,6 +5,7 @@ using GenReport.Domain.DBContext;
 using GenReport.Domain.Interfaces;
 using GenReport.Helpers;
 using GenReport.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
 using GenReport.Infrastructure.InMemory;
 using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Security;
@@ -33,6 +34,9 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var applicationConfiguration = new ApplicationConfiguration();
 configuration.GetSection("Configuration").Bind(applicationConfiguration);
+
+// Bind Ollama options
+builder.Services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
 
 try
 {
@@ -69,7 +73,19 @@ builder.Services.AddSingleton<IChatCompletionFactory, ChatCompletionFactory>();
 builder.Services.AddScoped<ITestAiConnectionService, TestAiConnectionService>();
 builder.Services.AddScoped<IIntentClassifierService, IntentClassifierService>();
 builder.Services.AddScoped<ITokenCountService, TokenCountService>();
-builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
+
+// Embedding services — registered as keyed so SchemaSearchService can resolve by provider
+builder.Services.AddScoped<OpenAIEmbeddingService>();
+builder.Services.AddKeyedScoped<IEmbeddingService, OpenAIEmbeddingService>("openai");
+builder.Services.AddKeyedScoped<IEmbeddingService, OpenAIEmbeddingService>("custom"); // OpenAI-compatible
+builder.Services.AddHttpClient<OllamaEmbeddingService>(client =>
+{
+    var ollamaBaseUrl = builder.Configuration.GetSection(OllamaOptions.SectionName).GetValue<string>("BaseUrl") ?? "http://localhost:11434";
+    client.BaseAddress = new Uri(ollamaBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+builder.Services.AddKeyedScoped<IEmbeddingService, OllamaEmbeddingService>("ollama");
+
 builder.Services.AddScoped<ISchemaSearchService, SchemaSearchService>();
 
 // In-memory AI store (models + default configs, seeded at startup)

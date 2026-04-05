@@ -1,5 +1,6 @@
 
 
+using GenReport.DB.Domain.Common;
 using GenReport.DB.Domain.Interfaces;
 using GenReport.Domain.Entities.Media;
 using GenReport.Domain.Entities.Onboarding;
@@ -105,8 +106,22 @@ namespace GenReport.Domain.DBContext
                 modelBuilder.Ignore<SchemaObject>();
                 modelBuilder.Ignore<RoutineObject>();
             }
+            
 
             modelBuilder.ApplyAllConfigurations();
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+                {
+                    modelBuilder.Entity(entityType.ClrType)
+                        .Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    modelBuilder.Entity(entityType.ClrType)
+                        .Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+                }
+            }
             base.OnModelCreating(modelBuilder);
         }
     }
