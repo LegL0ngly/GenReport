@@ -5,6 +5,7 @@ using GenReport.DB.Domain.Entities.Core;
 using GenReport.Domain.DBContext;
 using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Models.AI;
+using GenReport.Infrastructure.InMemory;
 using GenReport.DB.Domain.Static;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
     public sealed class IntentClassifierService(
         IChatCompletionFactory chatCompletionFactory,
         ApplicationDbContext context,
+        IInMemoryAiStore aiStore,
         ILogger<IntentClassifierService> logger) : IIntentClassifierService
     {
         private static readonly JsonSerializerOptions JsonOptions = new()
@@ -53,7 +55,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     return FallbackResult();
                 }
 
-                var lightweightModel = LightweightModelMap.GetLightweightModel(provider, connection.DefaultModel);
+                var lightweightModel = LightweightModelMap.GetLightweightModel(provider, connection.DefaultModel, aiStore);
 
                 // Check for a specific config matching this connection + model
                 var config = await context.AiConfigs

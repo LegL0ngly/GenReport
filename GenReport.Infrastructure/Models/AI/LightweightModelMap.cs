@@ -1,3 +1,6 @@
+using GenReport.Infrastructure.InMemory;
+using GenReport.Infrastructure.InMemory.Enums;
+
 namespace GenReport.Infrastructure.Models.AI
 {
     /// <summary>
@@ -23,6 +26,31 @@ namespace GenReport.Infrastructure.Models.AI
             return ProviderModels.TryGetValue(provider.Trim(), out var model)
                 ? model
                 : fallbackModel;
+        }
+
+        /// <summary>
+        /// Ollama-aware overload: picks the first locally installed model from the
+        /// in-memory store for Ollama, falling back to the hardcoded default (llama3.2:1b)
+        /// if the store is empty. For all other providers behaves identically to
+        /// <see cref="GetLightweightModel(string, string)"/>.
+        /// </summary>
+        public static string GetLightweightModel(string provider, string fallbackModel, IInMemoryAiStore aiStore)
+        {
+            var normalised = provider.Trim().ToLowerInvariant();
+
+            if (normalised == "ollama")
+            {
+                var installedModels = aiStore.GetModelsForProvider(AiProvider.Ollama);
+                if (installedModels.Count > 0)
+                    return installedModels[0].ModelId;
+
+                // No Ollama models found in store — use hardcoded fallback
+                return ProviderModels.TryGetValue("ollama", out var hardcoded)
+                    ? hardcoded
+                    : fallbackModel;
+            }
+
+            return GetLightweightModel(provider, fallbackModel);
         }
     }
 }
