@@ -21,7 +21,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
 
             // Depending on the logic, we may first check ownership. For now the service assumes valid access
             // but production logic might pass userId to the service. We are strictly providing the token count.
-            var response = await tokenCountService.GetSessionTokenCountAsync(id, ct);
+            var response = await tokenCountService.GetSessionTokenCountAsync(id, null, ct);
 
             if (!response.IsSuccess)
             {

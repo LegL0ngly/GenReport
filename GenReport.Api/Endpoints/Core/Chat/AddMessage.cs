@@ -131,19 +131,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
             session.UpdatedAt = DateTime.UtcNow;
             await context.SaveChangesAsync(ct);
 
-            // ── Token count check ────────────────────────────────────────────────────
-            var tokenCountResponse = await tokenCountService.GetSessionTokenCountAsync(sessionId, ct);
-            if (tokenCountResponse.IsSuccess && tokenCountResponse.IsExceeded)
-            {
-                await SendAsync(
-                    new HttpResponse<ChatMessage>(
-                        HttpStatusCode.BadRequest,
-                        "Context window exceeded. Please start a new chat.",
-                        "ERR_CONTEXT_WINDOW_EXCEEDED",
-                        []),
-                    cancellation: ct);
-                return;
-            }
+            // The token count check is moved further down so it can include the schema RAG size
 
             // ── Out-of-scope / sensitive short-circuit ──────────────────────────────
             if (intentEnum == ChatIntent.OutOfScope || intentEnum == ChatIntent.Sensitive)
@@ -222,6 +210,20 @@ namespace GenReport.Api.Endpoints.Core.Chat
             }
 
             var dynamicSystemPrompt = baseSystemPrompt + schemaContext.ToString();
+
+            // ── Token count check ────────────────────────────────────────────────────
+            var tokenCountResponse = await tokenCountService.GetSessionTokenCountAsync(sessionId, dynamicSystemPrompt, ct);
+            if (tokenCountResponse.IsSuccess && tokenCountResponse.IsExceeded)
+            {
+                await SendAsync(
+                    new HttpResponse<ChatMessage>(
+                        HttpStatusCode.BadRequest,
+                        "Context window exceeded. Please start a new chat.",
+                        "ERR_CONTEXT_WINDOW_EXCEEDED",
+                        []),
+                    cancellation: ct);
+                return;
+            }
 
             // ── Build ChatHistory for LLM ─────────────────────────────────────────────
             // Load all persisted messages for this session (excluding system messages — we inject ours dynamically)

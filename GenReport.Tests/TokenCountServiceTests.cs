@@ -46,7 +46,7 @@ namespace GenReport.Tests
         [Test]
         public async Task GetSessionTokenCountAsync_ReturnsError_WhenSessionNotFound()
         {
-            var response = await _tokenCountService.GetSessionTokenCountAsync(999, CancellationToken.None);
+            var response = await _tokenCountService.GetSessionTokenCountAsync(999, null, CancellationToken.None);
 
             Assert.IsFalse(response.IsSuccess);
             Assert.AreEqual("Session not found.", response.ErrorMessage);
@@ -63,7 +63,7 @@ namespace GenReport.Tests
             _dbContext.ChatSessions.Add(session);
             await _dbContext.SaveChangesAsync();
 
-            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, CancellationToken.None);
+            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, null, CancellationToken.None);
 
             Assert.IsFalse(response.IsSuccess);
             Assert.AreEqual("No AI connection associated with this session.", response.ErrorMessage);
@@ -94,7 +94,7 @@ namespace GenReport.Tests
             _dbContext.ChatSessions.Add(session);
             await _dbContext.SaveChangesAsync();
 
-            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, CancellationToken.None);
+            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, null, CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccess);
             Assert.IsTrue(response.TotalTokens > 0, "Tokens should be calculated.");
@@ -128,7 +128,7 @@ namespace GenReport.Tests
             _dbContext.ChatSessions.Add(session);
             await _dbContext.SaveChangesAsync();
 
-            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, CancellationToken.None);
+            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, null, CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccess);
             Assert.IsTrue(response.TotalTokens > 0);
@@ -167,7 +167,7 @@ namespace GenReport.Tests
             _dbContext.ChatSessions.Add(session);
             await _dbContext.SaveChangesAsync();
 
-            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, CancellationToken.None);
+            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, null, CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccess);
             Assert.IsTrue(response.TotalTokens > 0);
@@ -199,7 +199,7 @@ namespace GenReport.Tests
             _dbContext.ChatSessions.Add(session);
             await _dbContext.SaveChangesAsync();
 
-            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, CancellationToken.None);
+            var response = await _tokenCountService.GetSessionTokenCountAsync(session.Id, null, CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccess);
             Assert.AreEqual(0, response.TotalTokens);
