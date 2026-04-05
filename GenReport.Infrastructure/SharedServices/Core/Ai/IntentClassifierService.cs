@@ -5,6 +5,7 @@ using GenReport.DB.Domain.Entities.Core;
 using GenReport.Domain.DBContext;
 using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Models.AI;
+using GenReport.DB.Domain.Static;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -64,17 +65,17 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     .OrderByDescending(c => c.ModelId == lightweightModel ? 1 : 0)
                     .FirstOrDefaultAsync(ct);
 
+                // Fall back to the built-in default prompt if no config row exists
+                var promptValue = config?.Value ?? DefaultAiPrompts.IntentClassifier;
+
                 if (config == null)
-                {
-                    logger.LogWarning("No active IntentClassifier AiConfig found for connection {Id}. Defaulting to OutOfScope.", connection.Id);
-                    return FallbackResult();
-                }
+                    logger.LogWarning("No active IntentClassifier AiConfig found for connection {Id}. Using built-in default prompt.", connection.Id);
 
                 // Create the chat completion service via factory
                 var chatService = chatCompletionFactory.Create(provider, apiKey, lightweightModel);
 
-                // Build a combined prompt (per user requirements, don't pass system prompt role, just a single user message)
-                var combinedPrompt = $"{config.Value}\n\nUser Message:\n{userMessage}";
+                // Build combined prompt and classify
+                var combinedPrompt = $"{promptValue}\n\nUser Message:\n{userMessage}";
                 var chatHistory = new ChatHistory();
                 chatHistory.AddUserMessage(combinedPrompt);
 

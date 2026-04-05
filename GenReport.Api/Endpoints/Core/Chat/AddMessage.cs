@@ -6,6 +6,7 @@ using GenReport.Infrastructure.Models.AI;
 using GenReport.Infrastructure.Models.HttpRequests.Core.Chat;
 using GenReport.Infrastructure.Models.Shared;
 using GenReport.Infrastructure.Security.Encryption;
+using GenReport.DB.Domain.Static;
 using GenReport.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -184,7 +185,8 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 .OrderByDescending(c => c.Version)
                 .FirstOrDefaultAsync(ct);
 
-            var baseSystemPrompt = systemConfig?.Value ?? string.Empty;
+            var baseSystemPrompt = systemConfig?.Value
+                ?? DefaultAiPrompts.GetChatSystemPrompt(session.AiConnection.Provider);
 
             // ── Schema RAG: search relevant schema for this session ──────────────────
             var schemaContext = new StringBuilder();
