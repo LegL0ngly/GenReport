@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: CI
 
 on:
   push:
@@ -7,12 +7,55 @@ on:
     branches: [ "master" ]
 
 jobs:
-
-  build:
-
+  # ── Job 1: Restore → Build → Test ─────────────────────────────────────────
+  test:
+    name: Build & Test (.NET)
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore NuGet packages
+        run: dotnet restore GenReport.Api/GenReport.sln
+
+      - name: Build solution (Release)
+        run: dotnet build GenReport.Api/GenReport.sln --no-restore -c Release
+
+      - name: Run unit tests
+        run: >
+          dotnet test GenReport.Tests/GenReport.Tests.csproj
+          --no-build
+          -c Release
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory ./test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./test-results/*.trx
+
+  # ── Job 2: Build Docker image (only on push to master) ────────────────────
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test   # only runs if 'test' job passes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build the Docker image
+        run: |
+          docker build \
+            --file GenReport.Api/Dockerfile \
+            --tag genreport-api:$(date +%s) \
+            GenReport.Api
