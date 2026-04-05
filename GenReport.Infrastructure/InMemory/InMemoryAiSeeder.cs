@@ -19,17 +19,47 @@ namespace GenReport.Infrastructure.InMemory
         ILogger<InMemoryAiSeeder> logger)
     {
         private const string OpenRouterModelsUrl = "https://openrouter.ai/api/v1/models";
+        private const string OllamaTagsUrl        = "http://localhost:11434/api/tags";
 
         // ── Seed entry point ─────────────────────────────────────────────────────
 
         public async Task SeedAsync(CancellationToken ct = default)
         {
-            // 1. Seed Ollama with empty model list (models are dynamic/local)
-            store.SetModels(AiProvider.Ollama, []);
-            logger.LogInformation("[InMemoryAiSeeder] Ollama is local — model list left empty");
+            // 1. Fetch locally-installed Ollama models
+            await FetchAndSeedOllamaModelsAsync(ct);
 
             // 2. Fetch OpenRouter models for hosted providers
             await FetchAndSeedOpenRouterModelsAsync(ct);
+        }
+
+        // ── Ollama fetch ─────────────────────────────────────────────────────────
+
+        private async Task FetchAndSeedOllamaModelsAsync(CancellationToken ct)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(3); // fail fast if Ollama is not running
+
+                var response = await client.GetAsync(OllamaTagsUrl, ct);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync(ct);
+                var result = JsonSerializer.Deserialize<OllamaTagsResponse>(json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                var models = (result?.Models ?? [])
+                    .Select(m => new ProviderModelInfo(AiProvider.Ollama, m.Name, m.Name))
+                    .ToList();
+
+                store.SetModels(AiProvider.Ollama, models);
+                logger.LogInformation("[InMemoryAiSeeder] Seeded {Count} Ollama models from local instance", models.Count);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "[InMemoryAiSeeder] Could not reach Ollama at {Url} — seeding empty model list", OllamaTagsUrl);
+                store.SetModels(AiProvider.Ollama, []);
+            }
         }
 
         // ── OpenRouter fetch ─────────────────────────────────────────────────────
@@ -106,6 +136,21 @@ namespace GenReport.Infrastructure.InMemory
             [JsonPropertyName("id")]
             public string Id { get; set; } = string.Empty;
 
+            [JsonPropertyName("name")]
+            public string Name { get; set; } = string.Empty;
+        }
+
+        // ── Ollama response DTOs (minimal) ───────────────────────────────────────
+
+        private sealed class OllamaTagsResponse
+        {
+            [JsonPropertyName("models")]
+            public List<OllamaModel> Models { get; set; } = [];
+        }
+
+        private sealed class OllamaModel
+        {
+            /// <summary>Full model name including tag, e.g. "llama3.2:3b".</summary>
             [JsonPropertyName("name")]
             public string Name { get; set; } = string.Empty;
         }

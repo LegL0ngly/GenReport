@@ -36,7 +36,7 @@ namespace GenReport.Api.Endpoints.Core.Databases
                     DatabaseType = d.Type,
                     HostName = d.ServerAddress,
                     Port = d.Port,
-                    UserName = d.Username,
+                    UserName = "••••••••",
                     DatabaseName = d.Name,
                     Description = d.Description,
                     Status = d.Status,
