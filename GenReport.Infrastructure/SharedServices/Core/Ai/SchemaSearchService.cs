@@ -1,6 +1,7 @@
 using GenReport.Domain.DBContext;
 using GenReport.Infrastructure.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
@@ -10,10 +11,12 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
     /// <summary>
     /// Performs vector similarity search over <c>schema_objects</c> and <c>routine_objects</c>
     /// for a given database, returning objects whose cosine distance to the query is ≤ 0.4.
+    /// Dispatches to the appropriate <see cref="IEmbeddingService"/> based on the session's provider.
     /// </summary>
     public sealed class SchemaSearchService(
         ApplicationDbContext context,
-        IEmbeddingService embeddingService,
+        [FromKeyedServices("openai")] IEmbeddingService openAiEmbeddingService,
+        [FromKeyedServices("ollama")] IEmbeddingService ollamaEmbeddingService,
         ILogger<SchemaSearchService> logger) : ISchemaSearchService
     {
         private const float CosineDistanceThreshold = 0.4f;
@@ -26,10 +29,22 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             string model,
             CancellationToken ct = default)
         {
-            var embedding = await embeddingService.GenerateEmbeddingAsync(query, provider, apiKey, model, ct);
+            // Resolve the right embedding service by provider name
+            var normalised = provider.Trim().ToLowerInvariant();
+
+            float[]? embedding = normalised switch
+            {
+                "openai" or "custom" => await TryOpenAiEmbeddingAsync(query, apiKey, model, ct),
+                "ollama"             => await ollamaEmbeddingService.GenerateEmbeddingAsync(query, ct),
+                _ => null
+            };
 
             if (embedding == null)
+            {
+                logger.LogWarning(
+                    "No embedding produced for provider '{Provider}'. Schema RAG will be skipped.", provider);
                 return [];
+            }
 
             var queryVector = new Vector(embedding);
 
@@ -62,6 +77,18 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                 combined.Count, databaseId, schemaResults.Count, routineResults.Count);
 
             return combined;
+        }
+
+        /// <summary>
+        /// Delegates to <see cref="OpenAIEmbeddingService"/> passing the session-scoped key/model.
+        /// </summary>
+        private async Task<float[]?> TryOpenAiEmbeddingAsync(
+            string query, string apiKey, string model, CancellationToken ct)
+        {
+            if (openAiEmbeddingService is OpenAIEmbeddingService typedService)
+                return await typedService.GenerateEmbeddingAsync(query, apiKey, model, ct);
+
+            return await openAiEmbeddingService.GenerateEmbeddingAsync(query, ct);
         }
     }
 }
