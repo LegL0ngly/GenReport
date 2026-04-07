@@ -50,7 +50,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                 // Assuming we use the active AiConnection matching the given provider.
                 
                 connection = await context.AiConnections
-                    .FirstOrDefaultAsync(c => c.Provider == provider && c.IsActive && c.IsDefault, ct);
+                    .FirstOrDefaultAsync(c => c.Provider == provider && c.IsActive, ct);
 
                 if (connection == null)
                 {
