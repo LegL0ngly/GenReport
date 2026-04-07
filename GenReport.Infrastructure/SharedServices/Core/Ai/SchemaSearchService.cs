@@ -48,27 +48,55 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
 
             var queryVector = new Vector(embedding);
 
-            // Search schema objects (tables, views)
-            var schemaResults = await context.SchemaObjects
-                .AsNoTracking()
-                .Where(s => s.DatabaseId == databaseId
-                            && s.Embedding != null
-                            && s.FullSchema != null
-                            && s.Embedding.CosineDistance(queryVector) <= CosineDistanceThreshold)
-                .OrderBy(s => s.Embedding!.CosineDistance(queryVector))
-                .Select(s => new SchemaSearchResult(s.Name, s.Type, s.FullSchema!))
-                .ToListAsync(ct);
+            List<SchemaSearchResult> schemaResults;
+            List<SchemaSearchResult> routineResults;
 
-            // Search routine objects (stored procedures, functions)
-            var routineResults = await context.RoutineObjects
-                .AsNoTracking()
-                .Where(r => r.DatabaseId == databaseId
-                            && r.Embedding != null
-                            && r.FullSchema != null
-                            && r.Embedding.CosineDistance(queryVector) <= CosineDistanceThreshold)
-                .OrderBy(r => r.Embedding!.CosineDistance(queryVector))
-                .Select(r => new SchemaSearchResult(r.Name, r.Type, r.FullSchema!))
-                .ToListAsync(ct);
+            if (normalised is "ollama")
+            {
+                // Ollama: compare against the 768-dim embedding_ollama column
+                schemaResults = await context.SchemaObjects
+                    .AsNoTracking()
+                    .Where(s => s.DatabaseId == databaseId
+                                && s.EmbeddingOllama != null
+                                && s.FullSchema != null
+                                && s.EmbeddingOllama.CosineDistance(queryVector) <= CosineDistanceThreshold)
+                    .OrderBy(s => s.EmbeddingOllama!.CosineDistance(queryVector))
+                    .Select(s => new SchemaSearchResult(s.Name, s.Type, s.FullSchema!))
+                    .ToListAsync(ct);
+
+                routineResults = await context.RoutineObjects
+                    .AsNoTracking()
+                    .Where(r => r.DatabaseId == databaseId
+                                && r.EmbeddingOllama != null
+                                && r.FullSchema != null
+                                && r.EmbeddingOllama.CosineDistance(queryVector) <= CosineDistanceThreshold)
+                    .OrderBy(r => r.EmbeddingOllama!.CosineDistance(queryVector))
+                    .Select(r => new SchemaSearchResult(r.Name, r.Type, r.FullSchema!))
+                    .ToListAsync(ct);
+            }
+            else
+            {
+                // OpenAI / Custom: compare against the 1536-dim embedding column
+                schemaResults = await context.SchemaObjects
+                    .AsNoTracking()
+                    .Where(s => s.DatabaseId == databaseId
+                                && s.Embedding != null
+                                && s.FullSchema != null
+                                && s.Embedding.CosineDistance(queryVector) <= CosineDistanceThreshold)
+                    .OrderBy(s => s.Embedding!.CosineDistance(queryVector))
+                    .Select(s => new SchemaSearchResult(s.Name, s.Type, s.FullSchema!))
+                    .ToListAsync(ct);
+
+                routineResults = await context.RoutineObjects
+                    .AsNoTracking()
+                    .Where(r => r.DatabaseId == databaseId
+                                && r.Embedding != null
+                                && r.FullSchema != null
+                                && r.Embedding.CosineDistance(queryVector) <= CosineDistanceThreshold)
+                    .OrderBy(r => r.Embedding!.CosineDistance(queryVector))
+                    .Select(r => new SchemaSearchResult(r.Name, r.Type, r.FullSchema!))
+                    .ToListAsync(ct);
+            }
 
             var combined = schemaResults.Concat(routineResults).ToList();
 

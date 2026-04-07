@@ -617,6 +617,10 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("vector(1536)")
                         .HasColumnName("embedding");
 
+                    b.Property<Vector>("EmbeddingOllama")
+                        .HasColumnType("vector(768)")
+                        .HasColumnName("embedding_ollama");
+
                     b.Property<string>("EmbeddingText")
                         .HasColumnType("text")
                         .HasColumnName("embedding_text");
@@ -645,18 +649,11 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<long?>("database_id")
-                        .HasColumnType("bigint");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("database_id");
+                    b.HasIndex("DatabaseId");
 
-                    b.ToTable("routine_objects", t =>
-                        {
-                            t.Property("database_id")
-                                .HasColumnName("database_id1");
-                        });
+                    b.ToTable("routine_objects");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.SchemaObject", b =>
@@ -679,6 +676,10 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("vector(1536)")
                         .HasColumnName("embedding");
 
+                    b.Property<Vector>("EmbeddingOllama")
+                        .HasColumnType("vector(768)")
+                        .HasColumnName("embedding_ollama");
+
                     b.Property<string>("EmbeddingText")
                         .HasColumnType("text")
                         .HasColumnName("embedding_text");
@@ -707,18 +708,11 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<long?>("database_id")
-                        .HasColumnType("bigint");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("database_id");
+                    b.HasIndex("DatabaseId");
 
-                    b.ToTable("schema_objects", t =>
-                        {
-                            t.Property("database_id")
-                                .HasColumnName("database_id1");
-                        });
+                    b.ToTable("schema_objects");
                 });
 
             modelBuilder.Entity("GenReport.Domain.Entities.Media.MediaFile", b =>
@@ -960,7 +954,9 @@ namespace GenReport.DB.Migrations
                 {
                     b.HasOne("GenReport.DB.Domain.Entities.Core.Database", "Database")
                         .WithMany()
-                        .HasForeignKey("database_id");
+                        .HasForeignKey("DatabaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Database");
                 });
@@ -969,7 +965,9 @@ namespace GenReport.DB.Migrations
                 {
                     b.HasOne("GenReport.DB.Domain.Entities.Core.Database", "Database")
                         .WithMany()
-                        .HasForeignKey("database_id");
+                        .HasForeignKey("DatabaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Database");
                 });

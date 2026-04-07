@@ -14,7 +14,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
         ILogger<TokenCountService> logger,
         IHttpClientFactory httpClientFactory) : ITokenCountService
     {
-        public async Task<TokenCountResponse> GetSessionTokenCountAsync(long sessionId, CancellationToken ct = default)
+        public async Task<TokenCountResponse> GetSessionTokenCountAsync(long sessionId, string? updatedSystemPrompt = null, CancellationToken ct = default)
         {
             var session = await dbContext.ChatSessions
                 .Include(s => s.Messages)
@@ -50,6 +50,9 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
 
             int tokenCount = 0;
             string calculationMethod = "Unknown";
+            string systemPromptToUse = string.IsNullOrWhiteSpace(updatedSystemPrompt) 
+                                        ? aiConnection.SystemPrompt 
+                                        : updatedSystemPrompt;
 
             try
             {
@@ -58,26 +61,26 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     "anthropic" => await CountTokensAnthropicAsync(
                         aiConnection.ApiKey,
                         modelId,
-                        aiConnection.SystemPrompt,
+                        systemPromptToUse,
                         orderedMessages,
                         ct),
 
                     "gemini" => await CountTokensGeminiAsync(
                         aiConnection.ApiKey,
                         modelId,
-                        aiConnection.SystemPrompt,
+                        systemPromptToUse,
                         orderedMessages,
                         ct),
 
                     "openai" => await CountTokensOpenAiAsync(
                         aiConnection.ApiKey,
                         modelId,
-                        aiConnection.SystemPrompt,
+                        systemPromptToUse,
                         orderedMessages,
                         ct),
 
                     // ollama, custom, unknown → local
-                    _ => CountTokensLocal(BuildFullText(aiConnection.SystemPrompt, orderedMessages))
+                    _ => CountTokensLocal(BuildFullText(systemPromptToUse, orderedMessages))
                 };
 
                 calculationMethod = provider switch
@@ -104,7 +107,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     logger.LogWarning(ex,
                         "Provider-specific token count failed for provider '{Provider}'. Falling back to local estimation.",
                         provider);
-                    tokenCount = CountTokensLocal(BuildFullText(aiConnection.SystemPrompt, orderedMessages));
+                    tokenCount = CountTokensLocal(BuildFullText(systemPromptToUse, orderedMessages));
                     calculationMethod = "Local Estimation (Fallback)";
                 }
             }
