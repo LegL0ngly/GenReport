@@ -38,6 +38,9 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             string defaultModel,
             CancellationToken ct = default)
         {
+            AiConnection? connection = null;
+            string? lightweightModel = null;
+
             try
             {
                 // Note: The caller (AddMessage endpoint) should ideally pass the connection ID
@@ -46,7 +49,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                 // Alternatively, we should change the interface to accept AiConnection object directly or its ID.
                 // Assuming we use the active AiConnection matching the given provider.
                 
-                var connection = await context.AiConnections
+                connection = await context.AiConnections
                     .FirstOrDefaultAsync(c => c.Provider == provider && c.IsActive, ct);
 
                 if (connection == null)
@@ -55,56 +58,84 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     return FallbackResult();
                 }
 
-                var lightweightModel = LightweightModelMap.GetLightweightModel(provider, connection.DefaultModel, aiStore);
+                lightweightModel = LightweightModelMap.GetLightweightModel(provider, connection.DefaultModel, aiStore);
 
-                // Check for a specific config matching this connection + model
-                var config = await context.AiConfigs
-                    .AsNoTracking()
-                    .Where(c => c.Type == AiConfigType.IntentClassifier
-                             && c.AiConnectionId == connection.Id
-                             && c.IsActive)
-                    // Prefer the one matching our lightweight model, fallback to a catch-all (ModelId null)
-                    .OrderByDescending(c => c.ModelId == lightweightModel ? 1 : 0)
-                    .FirstOrDefaultAsync(ct);
-
-                // Fall back to the built-in default prompt if no config row exists
-                var promptValue = config?.Value ?? DefaultAiPrompts.IntentClassifier;
-
-                if (config == null)
-                    logger.LogWarning("No active IntentClassifier AiConfig found for connection {Id}. Using built-in default prompt.", connection.Id);
-
-                // Create the chat completion service via factory
-                var chatService = chatCompletionFactory.Create(provider, apiKey, lightweightModel);
-
-                // Build combined prompt and classify
-                var combinedPrompt = $"{promptValue}\n\nUser Message:\n{userMessage}";
-                var chatHistory = new ChatHistory();
-                chatHistory.AddUserMessage(combinedPrompt);
-
-                // Get execution settings for controlled JSON output
-                var executionSettings = GetExecutionSettings(provider);
-
-                // Call the LLM
-                var response = await chatService.GetChatMessageContentAsync(
-                    chatHistory, executionSettings, cancellationToken: ct);
-
-                var responseText = response?.Content?.Trim();
-
-                if (string.IsNullOrWhiteSpace(responseText))
+                return await ExecuteClassificationAsync(userMessage, provider, apiKey, lightweightModel, connection, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                if (connection != null && lightweightModel != null && !string.Equals(lightweightModel, connection.DefaultModel, StringComparison.OrdinalIgnoreCase))
                 {
-                    logger.LogWarning("Intent classifier returned empty response. Defaulting to OutOfScope.");
-                    return FallbackResult();
+                    logger.LogWarning(ex, "Intent classification failed with lightweight model '{Model}'. Retrying with connection default model '{DefaultModel}'.", 
+                        lightweightModel, connection.DefaultModel);
+
+                    try
+                    {
+                        return await ExecuteClassificationAsync(userMessage, provider, apiKey, connection.DefaultModel, connection, ct);
+                    }
+                    catch (Exception exRetry) when (exRetry is not OperationCanceledException)
+                    {
+                        logger.LogError(exRetry, "Intent classification failed on retry for message: {Message}. Defaulting to OutOfScope.",
+                            userMessage.Length > 100 ? userMessage[..100] + "..." : userMessage);
+                        return FallbackResult();
+                    }
                 }
 
-                // Parse the JSON response
-                return ParseClassificationResult(responseText);
-            }
-            catch (Exception ex)
-            {
                 logger.LogError(ex, "Intent classification failed for message: {Message}. Defaulting to OutOfScope.",
                     userMessage.Length > 100 ? userMessage[..100] + "..." : userMessage);
                 return FallbackResult();
             }
+        }
+
+        private async Task<IntentClassificationResult> ExecuteClassificationAsync(
+            string userMessage,
+            string provider,
+            string apiKey,
+            string targetModel,
+            AiConnection connection,
+            CancellationToken ct)
+        {
+            // Check for a specific config matching this connection + model
+            var config = await context.AiConfigs
+                .AsNoTracking()
+                .Where(c => c.Type == AiConfigType.IntentClassifier
+                         && c.AiConnectionId == connection.Id
+                         && c.IsActive)
+                // Prefer the one matching our lightweight model, fallback to a catch-all (ModelId null)
+                .OrderByDescending(c => c.ModelId == targetModel ? 1 : 0)
+                .FirstOrDefaultAsync(ct);
+
+            // Fall back to the built-in default prompt if no config row exists
+            var promptValue = config?.Value ?? DefaultAiPrompts.IntentClassifier;
+
+            if (config == null)
+                logger.LogWarning("No active IntentClassifier AiConfig found for connection {Id}. Using built-in default prompt.", connection.Id);
+
+            // Create the chat completion service via factory
+            var chatService = chatCompletionFactory.Create(provider, apiKey, targetModel);
+
+            // Build combined prompt and classify
+            var combinedPrompt = $"{promptValue}\n\nUser Message:\n{userMessage}";
+            var chatHistory = new ChatHistory();
+            chatHistory.AddUserMessage(combinedPrompt);
+
+            // Get execution settings for controlled JSON output
+            var executionSettings = GetExecutionSettings(provider);
+
+            // Call the LLM
+            var response = await chatService.GetChatMessageContentAsync(
+                chatHistory, executionSettings, cancellationToken: ct);
+
+            var responseText = response?.Content?.Trim();
+
+            if (string.IsNullOrWhiteSpace(responseText))
+            {
+                logger.LogWarning("Intent classifier returned empty response. Defaulting to OutOfScope.");
+                return FallbackResult();
+            }
+
+            // Parse the JSON response
+            return ParseClassificationResult(responseText);
         }
 
         private static IntentClassificationResult FallbackResult() => new()
