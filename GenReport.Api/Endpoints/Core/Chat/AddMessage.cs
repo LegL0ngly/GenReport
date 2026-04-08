@@ -179,8 +179,11 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 ?? DefaultAiPrompts.GetChatSystemPrompt(session.AiConnection.Provider);
 
             // ── Schema RAG: search relevant schema for this session ──────────────────
+            // Only inject schema context for intents that actually need it
+            var shouldInjectSchema = intentEnum is ChatIntent.DatabaseQuery or ChatIntent.ReportGenerate;
+
             string dynamicSystemPrompt;
-            if (session.DatabaseId.HasValue && session.Database != null && !string.IsNullOrWhiteSpace(content))
+            if (shouldInjectSchema && session.DatabaseId.HasValue && session.Database != null && !string.IsNullOrWhiteSpace(content))
             {
                 // Build the search query from entire conversation for better recall
                 var allUserMessages = await context.ChatMessages
