@@ -52,7 +52,8 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 var goPayload = new 
                 { 
                     databaseId = req.DatabaseConnectionId, 
-                    sql = req.Query 
+                    sql = req.Query,
+                    maxRowsToReturn = db.MaxRowsToReturn
                 };
 
                 var client = httpClientFactory.CreateClient("GoService");
