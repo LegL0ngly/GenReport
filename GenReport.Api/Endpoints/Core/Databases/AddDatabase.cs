@@ -59,7 +59,8 @@ namespace GenReport.Api.Endpoints.Core.Databases
                 SizeInBytes = 0,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                Provider = req.Provider
+                Provider = req.Provider,
+                MaxRowsToReturn = req.MaxRowsToReturn
             };
 
             await context.Databases.AddAsync(newDatabase, ct);

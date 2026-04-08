@@ -56,6 +56,7 @@ namespace GenReport.Api.Endpoints.Core.Databases
             }
             if (req.Provider.HasValue) existingDb.Provider = req.Provider.Value;
             if (req.Description != null) existingDb.Description = req.Description;
+            if (req.MaxRowsToReturn.HasValue) existingDb.MaxRowsToReturn = req.MaxRowsToReturn.Value;
 
             existingDb.UpdatedAt = DateTime.UtcNow;
 

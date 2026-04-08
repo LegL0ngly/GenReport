@@ -360,6 +360,12 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("text")
                         .HasColumnName("encryption_method");
 
+                    b.Property<int>("MaxRowsToReturn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(20)
+                        .HasColumnName("max_rows_to_return");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)

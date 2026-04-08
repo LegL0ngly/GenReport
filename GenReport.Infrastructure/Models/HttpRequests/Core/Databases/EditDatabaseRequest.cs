@@ -29,5 +29,7 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Databases
         public string? ConnectionString { get; set; }
 
         public string? Description { get; set; }
+        
+        public int? MaxRowsToReturn { get; set; }
     }
 }

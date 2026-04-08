@@ -126,5 +126,11 @@ namespace GenReport.DB.Domain.Entities.Core
         [Column("provider")]
         [Required]
         public DbProvider Provider { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of rows to return for chat queries.
+        /// </summary>
+        [Column("max_rows_to_return")]
+        public int MaxRowsToReturn { get; set; } = 20;
     }
 }
