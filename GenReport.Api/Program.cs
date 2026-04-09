@@ -12,6 +12,8 @@ using GenReport.Infrastructure.Security;
 using GenReport.Infrastructure.Security.Encryption;
 using GenReport.Infrastructure.SharedServices.Core.Databases;
 using GenReport.Infrastructure.SharedServices.Core.Ai;
+using GenReport.Infrastructure.SharedServices.Core.Reports;
+using System.Net.Mail;
 using GenReport.Middlewares;
 using GenReport.Services.Implementations;
 using GenReport.Services.Interfaces;
@@ -37,6 +39,9 @@ configuration.GetSection("Configuration").Bind(applicationConfiguration);
 
 // Bind Ollama options
 builder.Services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
+
+// Bind SMTP options
+builder.Services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
 
 try
 {
@@ -88,6 +93,19 @@ builder.Services.AddKeyedScoped<IEmbeddingService, OllamaEmbeddingService>("olla
 
 builder.Services.AddScoped<ISchemaSearchService, SchemaSearchService>();
 builder.Services.AddSingleton<ISchemaRagInjectionService, SchemaRagInjectionService>();
+builder.Services.AddScoped<ISqliteReportService, SqliteReportService>();
+
+// FluentEmail with SMTP (Mailpit on localhost:1025 by default)
+var smtpOpts = builder.Configuration.GetSection(SmtpOptions.SectionName).Get<SmtpOptions>() ?? new SmtpOptions();
+builder.Services
+    .AddFluentEmail(smtpOpts.FromAddress, smtpOpts.FromName)
+    .AddSmtpSender(new SmtpClient(smtpOpts.Host, smtpOpts.Port)
+    {
+        EnableSsl = smtpOpts.EnableSsl,
+        Credentials = string.IsNullOrWhiteSpace(smtpOpts.Username)
+            ? null
+            : new System.Net.NetworkCredential(smtpOpts.Username, smtpOpts.Password)
+    });
 
 // In-memory AI store (models + default configs, seeded at startup)
 var inMemoryAiStore = new InMemoryAiStore();
