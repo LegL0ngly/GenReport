@@ -53,6 +53,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             var queries = await queryExpansionService.ExpandAsync(query, provider, apiKey, model, ct);
 
             // ── Step 2: Embed all variants in parallel ────────────────────────────────
+            // Safe to parallelise — embedding services do not use DbContext.
             var embeddingTasks = queries
                 .Select(q => EmbedQueryAsync(q, normalised, apiKey, model, ct))
                 .ToList();
@@ -74,12 +75,15 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                 return [];
             }
 
-            // ── Step 3: Run vector searches in parallel for each query variant ────────
-            var searchTasks = validPairs
-                .Select(pair => SearchForVectorAsync(pair.Vector, databaseId, normalised, ct))
-                .ToList();
-
-            var perQueryResults = await Task.WhenAll(searchTasks);
+            // ── Step 3: Search sequentially — DbContext is NOT thread-safe ───────────
+            // Running these concurrently via Task.WhenAll would cause
+            // "A second operation was started on this context" exceptions.
+            var perQueryResults = new List<List<SchemaSearchResult>>(validPairs.Count);
+            foreach (var pair in validPairs)
+            {
+                var results = await SearchForVectorAsync(pair.Vector, databaseId, normalised, ct);
+                perQueryResults.Add(results);
+            }
 
             // ── Step 4: Reciprocal Rank Fusion ────────────────────────────────────────
             // key = (Name, Type) as a unique identity for deduplication across lists
