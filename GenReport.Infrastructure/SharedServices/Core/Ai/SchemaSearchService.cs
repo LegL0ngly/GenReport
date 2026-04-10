@@ -15,7 +15,11 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
     /// Pipeline:
     /// <list type="number">
     ///   <item>The original query is expanded into N variants via <see cref="IQueryExpansionService"/>.</item>
-    ///   <item>Each variant is embedded and run in parallel against <c>schema_objects</c> and <c>routine_objects</c>.</item>
+    ///   <item>Each variant is embedded in parallel (embedding services are thread-safe).</item>
+    ///   <item>Each embedded variant runs its own vector search in parallel against
+    ///         <c>schema_objects</c> and <c>routine_objects</c>, each using a short-lived
+    ///         <see cref="ApplicationDbContext"/> created from <see cref="IDbContextFactory{TContext}"/>
+    ///         so that concurrent DB access is safe.</item>
     ///   <item>RRF merges all ranked result lists into one deduplicated ranking
     ///         (score = Σ 1 / (60 + rank) across query lists).</item>
     ///   <item>Top <see cref="MaxResults"/> objects by RRF score are returned.</item>
@@ -23,7 +27,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
     /// </para>
     /// </summary>
     public sealed class SchemaSearchService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> dbContextFactory,
         IQueryExpansionService queryExpansionService,
         [FromKeyedServices("openai")] IEmbeddingService openAiEmbeddingService,
         [FromKeyedServices("ollama")] IEmbeddingService ollamaEmbeddingService,
@@ -75,15 +79,14 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                 return [];
             }
 
-            // ── Step 3: Search sequentially — DbContext is NOT thread-safe ───────────
-            // Running these concurrently via Task.WhenAll would cause
-            // "A second operation was started on this context" exceptions.
-            var perQueryResults = new List<List<SchemaSearchResult>>(validPairs.Count);
-            foreach (var pair in validPairs)
-            {
-                var results = await SearchForVectorAsync(pair.Vector, databaseId, normalised, ct);
-                perQueryResults.Add(results);
-            }
+            // ── Step 3: Search in parallel — each task owns its own DbContext ─────────
+            // IDbContextFactory creates an independent DbContext per call, so concurrent
+            // EF operations are isolated and thread-safe.
+            var searchTasks = validPairs
+                .Select(pair => SearchForVectorAsync(pair.Vector, databaseId, normalised, ct))
+                .ToList();
+
+            var perQueryResults = await Task.WhenAll(searchTasks);
 
             // ── Step 4: Reciprocal Rank Fusion ────────────────────────────────────────
             // key = (Name, Type) as a unique identity for deduplication across lists
@@ -141,8 +144,8 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
 
         /// <summary>
         /// Runs a cosine-distance search for a single query vector against both
-        /// <c>schema_objects</c> and <c>routine_objects</c> and returns the concatenated
-        /// ordered results (schema first, then routines).
+        /// <c>schema_objects</c> and <c>routine_objects</c> using a fresh, independently
+        /// owned <see cref="ApplicationDbContext"/> from the factory — safe for concurrent use.
         /// </summary>
         private async Task<List<SchemaSearchResult>> SearchForVectorAsync(
             Vector queryVector,
@@ -150,12 +153,15 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             string normalised,
             CancellationToken ct)
         {
+            // Each parallel task gets its own context — fully isolated, no shared state.
+            await using var ctx = await dbContextFactory.CreateDbContextAsync(ct);
+
             List<SchemaSearchResult> schemaResults;
             List<SchemaSearchResult> routineResults;
 
             if (normalised is "ollama")
             {
-                schemaResults = await context.SchemaObjects
+                schemaResults = await ctx.SchemaObjects
                     .AsNoTracking()
                     .Where(s => s.DatabaseId == databaseId
                                 && s.EmbeddingOllama != null
@@ -165,7 +171,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     .Select(s => new SchemaSearchResult(s.Name, s.Type, s.FullSchema!))
                     .ToListAsync(ct);
 
-                routineResults = await context.RoutineObjects
+                routineResults = await ctx.RoutineObjects
                     .AsNoTracking()
                     .Where(r => r.DatabaseId == databaseId
                                 && r.EmbeddingOllama != null
@@ -178,7 +184,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             else
             {
                 // OpenAI / Custom: 1536-dim embedding column
-                schemaResults = await context.SchemaObjects
+                schemaResults = await ctx.SchemaObjects
                     .AsNoTracking()
                     .Where(s => s.DatabaseId == databaseId
                                 && s.Embedding != null
@@ -188,7 +194,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     .Select(s => new SchemaSearchResult(s.Name, s.Type, s.FullSchema!))
                     .ToListAsync(ct);
 
-                routineResults = await context.RoutineObjects
+                routineResults = await ctx.RoutineObjects
                     .AsNoTracking()
                     .Where(r => r.DatabaseId == databaseId
                                 && r.Embedding != null

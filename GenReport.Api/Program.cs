@@ -56,6 +56,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         }));
 builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
+// Factory registration — used by SchemaSearchService to create isolated DbContext
+// instances for each parallel vector search task (Task.WhenAll safe).
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+    options.ConfigureWarnings(w => w.Ignore(CoreEventId.PossibleIncorrectRequiredNavigationWithQueryFilterInteractionWarning)).UseNpgsql(configuration.GetConnectionString("GenReportPostgres"),
+        npgSqlOptions => {
+            npgSqlOptions.CommandTimeout(applicationConfiguration.CommandTimeOut);
+            npgSqlOptions.UseVector();
+        }), ServiceLifetime.Scoped);
+
 // Add FastEndpoints
 builder.Services.AddFastEndpoints();
 
