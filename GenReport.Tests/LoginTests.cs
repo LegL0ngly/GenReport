@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using GenReport.Infrastructure.Models.HttpRequests.Onboarding;
+using GenReport.Domain.DBContext;
+using GenReport.Domain.Entities.Onboarding;
 
 namespace GenReport.Tests
 {
@@ -13,12 +18,43 @@ namespace GenReport.Tests
     {
         private WebApplicationFactory<Program> _factory;
         private HttpClient _client;
+        private string _dbName;
 
         [SetUp]
-        public void Setup()
+        public async Task Setup()
         {
-            _factory = new WebApplicationFactory<Program>();
+            _dbName = "LoginTestDb_" + Guid.NewGuid().ToString();
+
+            _factory = new WebApplicationFactory<Program>()
+                .WithWebHostBuilder(builder =>
+                {
+                    builder.ConfigureServices(services =>
+                    {
+                        services.Replace(ServiceDescriptor.Scoped<DbContextOptions<ApplicationDbContext>>(_ =>
+                            new DbContextOptionsBuilder<ApplicationDbContext>()
+                                .UseInMemoryDatabase(_dbName)
+                                .Options));
+                    });
+                });
+
             _client = _factory.CreateClient();
+
+            // Seed a real user so the invalid-password path is exercised
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await context.Database.EnsureCreatedAsync();
+
+            var user = new User(
+                password: "CorrectPassword123!",
+                email: "existing@example.com",
+                firstName: "Test",
+                lastName: "User",
+                middleName: "",
+                profileURL: ""
+            );
+            user.RoleId = 1;
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
         }
 
         [TearDown]
@@ -30,6 +66,26 @@ namespace GenReport.Tests
 
         [Test]
         public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
+        {
+            // Arrange - user exists but password is wrong
+            var request = new LoginRequest
+            {
+                Email = "existing@example.com",
+                Password = "WrongPassword123!"
+            };
+
+            // Act
+            var response = await _client.PostAsJsonAsync("/login", request);
+
+            // Assert
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), "API returns 200 OK but sets ErrorResponse");
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.IsTrue(content.Contains("Please check password") || content.Contains("ErrorResponse"), "Response should contain an error message");
+        }
+
+        [Test]
+        public async Task Login_WithNonExistentEmail_ReturnsNotFoundError()
         {
             // Arrange
             var request = new LoginRequest
@@ -43,9 +99,8 @@ namespace GenReport.Tests
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), "API returns 200 OK but sets ErrorResponse");
-            
+
             var content = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(content);
             Assert.IsTrue(content.Contains("Please check email") || content.Contains("ErrorResponse"), "Response should contain an error message");
         }
 
@@ -56,7 +111,7 @@ namespace GenReport.Tests
             var request = new LoginRequest
             {
                 Email = "",
-                Password = "SomePassword123!" 
+                Password = "SomePassword123!"
             };
 
             // Act
