@@ -34,8 +34,8 @@ namespace GenReport.Infrastructure.Models.AI
         [JsonPropertyName("type")]
         public string Type { get; set; } = string.Empty;
 
-        /// <summary>Full DDL / CREATE statement for the object.</summary>
-        [JsonPropertyName("fullSchema")]
-        public string FullSchema { get; set; } = string.Empty;
+        /// <summary>Concise embedding text describing the object's structure (table/column names, types, FK relationships).</summary>
+        [JsonPropertyName("schema")]
+        public string Schema { get; set; } = string.Empty;
     }
 }

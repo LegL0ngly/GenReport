@@ -128,7 +128,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
 
         // ── Private helpers ───────────────────────────────────────────────────────────
 
-        /// <summary>
+        /// <summary>   
         /// Generates an embedding for <paramref name="query"/> using the appropriate service.
         /// </summary>
         private async Task<float[]?> EmbedQueryAsync(
@@ -165,20 +165,20 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     .AsNoTracking()
                     .Where(s => s.DatabaseId == databaseId
                                 && s.EmbeddingOllama != null
-                                && s.FullSchema != null
+                                && s.EmbeddingText != null
                                 && s.EmbeddingOllama.CosineDistance(queryVector) <= CosineDistanceThreshold)
                     .OrderBy(s => s.EmbeddingOllama!.CosineDistance(queryVector))
-                    .Select(s => new SchemaSearchResult(s.Name, s.Type, s.FullSchema!))
+                    .Select(s => new SchemaSearchResult(s.Name, s.Type, s.EmbeddingText!))
                     .ToListAsync(ct);
 
                 routineResults = await ctx.RoutineObjects
                     .AsNoTracking()
                     .Where(r => r.DatabaseId == databaseId
                                 && r.EmbeddingOllama != null
-                                && r.FullSchema != null
+                                && r.EmbeddingText != null
                                 && r.EmbeddingOllama.CosineDistance(queryVector) <= CosineDistanceThreshold)
                     .OrderBy(r => r.EmbeddingOllama!.CosineDistance(queryVector))
-                    .Select(r => new SchemaSearchResult(r.Name, r.Type, r.FullSchema!))
+                    .Select(r => new SchemaSearchResult(r.Name, r.Type, r.EmbeddingText!))
                     .ToListAsync(ct);
             }
             else
@@ -188,20 +188,20 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     .AsNoTracking()
                     .Where(s => s.DatabaseId == databaseId
                                 && s.Embedding != null
-                                && s.FullSchema != null
+                                && s.EmbeddingText != null
                                 && s.Embedding.CosineDistance(queryVector) <= CosineDistanceThreshold)
                     .OrderBy(s => s.Embedding!.CosineDistance(queryVector))
-                    .Select(s => new SchemaSearchResult(s.Name, s.Type, s.FullSchema!))
+                    .Select(s => new SchemaSearchResult(s.Name, s.Type, s.EmbeddingText!))
                     .ToListAsync(ct);
 
                 routineResults = await ctx.RoutineObjects
                     .AsNoTracking()
                     .Where(r => r.DatabaseId == databaseId
                                 && r.Embedding != null
-                                && r.FullSchema != null
+                                && r.EmbeddingText != null
                                 && r.Embedding.CosineDistance(queryVector) <= CosineDistanceThreshold)
                     .OrderBy(r => r.Embedding!.CosineDistance(queryVector))
-                    .Select(r => new SchemaSearchResult(r.Name, r.Type, r.FullSchema!))
+                    .Select(r => new SchemaSearchResult(r.Name, r.Type, r.EmbeddingText!))
                     .ToListAsync(ct);
             }
 

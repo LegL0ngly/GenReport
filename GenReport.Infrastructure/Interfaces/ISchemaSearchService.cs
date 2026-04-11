@@ -1,6 +1,6 @@
 namespace GenReport.Infrastructure.Interfaces
 {
-    public record SchemaSearchResult(string Name, string Type, string FullSchema);
+    public record SchemaSearchResult(string Name, string Type, string Schema);
 
     /// <summary>
     /// Searches schema and routine objects for a given database using vector similarity.

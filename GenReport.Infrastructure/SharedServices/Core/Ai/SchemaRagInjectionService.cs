@@ -86,7 +86,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                 {
                     Name = r.Name,
                     Type = r.Type.ToUpperInvariant(),
-                    FullSchema = r.FullSchema,
+                    Schema = r.Schema,
                 }).ToList()
             };
 
