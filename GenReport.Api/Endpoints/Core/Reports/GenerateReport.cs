@@ -61,6 +61,9 @@ namespace GenReport.Api.Endpoints.Core.Reports
                 object jsonResult = default;
                 if (!string.IsNullOrWhiteSpace(responseBody))
                 {
+                object jsonResult = default;
+                if (!string.IsNullOrWhiteSpace(responseBody))
+                {
                     try
                     {
                         jsonResult = JsonSerializer.Deserialize<JsonElement>(responseBody);
@@ -68,6 +71,12 @@ namespace GenReport.Api.Endpoints.Core.Reports
                     catch (JsonException ex)
                     {
                         logger.LogError(ex, "Failed to parse Go service report response as JSON");
+                        await SendAsync(new HttpResponse<object>(
+                            HttpStatusCode.InternalServerError,
+                            "Report generation succeeded but the response could not be parsed.",
+                            "ERR_REPORT_PARSE_FAILED",
+                            []), cancellation: ct);
+                        return;
                     }
                 }
 
