@@ -58,9 +58,7 @@ namespace GenReport.Api.Endpoints.Core.Reports
                     return;
                 }
 
-                object jsonResult = default;
-                if (!string.IsNullOrWhiteSpace(responseBody))
-                {
+           
                 object jsonResult = default;
                 if (!string.IsNullOrWhiteSpace(responseBody))
                 {
