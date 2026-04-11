@@ -97,18 +97,26 @@ namespace GenReport.Domain.DBContext
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             var providerName = Database.ProviderName ?? string.Empty;
-            if (providerName.Contains("Npgsql"))
+            var isNpgsql = providerName.Contains("Npgsql");
+
+            if (isNpgsql)
             {
                 modelBuilder.HasPostgresExtension("vector");
             }
-            else
+
+            modelBuilder.ApplyAllConfigurations();
+
+            // When not running on Npgsql (e.g. in-memory provider used in tests) the
+            // Pgvector Vector type has no parameterless constructor and cannot be bound
+            // by EF conventions.  Ignore SchemaObject and RoutineObject *after* the
+            // configurations have been applied so the Ignore wins and removes them from
+            // the model entirely.
+            if (!isNpgsql)
             {
                 modelBuilder.Ignore<SchemaObject>();
                 modelBuilder.Ignore<RoutineObject>();
             }
-            
 
-            modelBuilder.ApplyAllConfigurations();
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))

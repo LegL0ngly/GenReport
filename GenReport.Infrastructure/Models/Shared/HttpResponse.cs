@@ -24,6 +24,11 @@ namespace GenReport.Infrastructure.Models.Shared
         public HttpErrorResponse? ErrorResponse { get; set; }
 
         /// <summary>
+        /// Parameterless constructor required by System.Text.Json for deserialization.
+        /// </summary>
+        public HttpResponse() { }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="HttpResponse{T}"/> class for a successful response.
         /// Only the SuccessResponse property will be populated.
         /// </summary>

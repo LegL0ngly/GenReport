@@ -37,6 +37,11 @@ namespace GenReport.Infrastructure.Models.Shared
 
 
         /// <summary>
+        /// Parameterless constructor required by System.Text.Json for deserialization.
+        /// </summary>
+        public HttpSuccessResponse() { }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="HttpSuccessResponse{T}"/> class.
         /// </summary>
         /// <param name="data">The data<see cref="T"/></param>
