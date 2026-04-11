@@ -17,6 +17,7 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Reports
         /// Output format: e.g. "excel", "pdf", "csv"
         /// </summary>
         [Required]
+        [AllowedValues("excel", "pdf", "csv", ErrorMessage = "Format must be one of: excel, pdf, csv")]
         public required string Format { get; set; }
     }
 }
