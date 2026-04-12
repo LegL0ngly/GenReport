@@ -2,7 +2,6 @@ using FastEndpoints;
 using GenReport.Domain.DBContext;
 using GenReport.Infrastructure.Models.HttpResponse.Dashboard;
 using GenReport.Infrastructure.Models.Shared;
-using GenReport.Infrastructure.Static.Constants;
 using GenReport.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
