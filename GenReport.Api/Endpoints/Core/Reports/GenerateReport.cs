@@ -19,7 +19,7 @@ namespace GenReport.Api.Endpoints.Core.Reports
     {
         public override void Configure()
         {
-            Post("/reports/generate");
+            Post("/chat/generate-report");
         }
 
         public override async Task HandleAsync(GenerateReportRequest req, CancellationToken ct)

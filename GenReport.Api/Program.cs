@@ -36,6 +36,14 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var applicationConfiguration = new ApplicationConfiguration();
 configuration.GetSection("Configuration").Bind(applicationConfiguration);
+// Bind the top-level RabbitMQConfiguration section into the shared config object.
+applicationConfiguration.RabbitMQConfiguration = new GenReport.Infrastructure.Configuration.RabbitMQConfiguration
+{
+    HostName = "localhost",
+    UserName = "guest",
+    Password = "guest"
+};
+configuration.GetSection("RabbitMQConfiguration").Bind(applicationConfiguration.RabbitMQConfiguration);
 
 // Bind Ollama options
 builder.Services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
@@ -104,6 +112,10 @@ builder.Services.AddScoped<IQueryExpansionService, QueryExpansionService>();
 builder.Services.AddScoped<ISchemaSearchService, SchemaSearchService>();
 builder.Services.AddSingleton<ISchemaRagInjectionService, SchemaRagInjectionService>();
 builder.Services.AddScoped<ISqliteReportService, SqliteReportService>();
+
+// Hosted service: listens to RabbitMQ report_success / report_error queues and
+// triggers Excel/PDF generation + email delivery for completed report jobs.
+builder.Services.AddHostedService<GenReport.Infrastructure.SharedServices.Distributed.RabbitMQ.ReportResultListenerService>();
 
 // FluentEmail with SMTP (Mailpit on localhost:1025 by default)
 var smtpOpts = builder.Configuration.GetSection(SmtpOptions.SectionName).Get<SmtpOptions>() ?? new SmtpOptions();
