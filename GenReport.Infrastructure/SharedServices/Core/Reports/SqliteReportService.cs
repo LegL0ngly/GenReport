@@ -328,14 +328,15 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                                         def.RelativeColumn();
                                 });
 
-                                foreach (var colName in table.Columns)
+                                // Header — must call t.Header exactly once; all cells go inside.
+                                t.Header(header =>
                                 {
-                                    t.Header(header =>
+                                    foreach (var colName in table.Columns)
                                     {
                                         header.Cell().Background("#2D5BE3").Padding(4)
                                             .Text(colName).FontColor(Colors.White).Bold().FontSize(8);
-                                    });
-                                }
+                                    }
+                                });
 
                                 for (var rowIdx = 0; rowIdx < table.Rows.Count; rowIdx++)
                                 {
