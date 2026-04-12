@@ -83,5 +83,11 @@ namespace GenReport.Infrastructure.Configuration
         /// Gets or sets the Base64-encoded 32-byte master key used by the credential encryption service.
         /// </summary>
         public string EncryptionMasterKey { get; set; } = "";
+
+        /// <summary>
+        /// Gets or sets the Cloudflare R2 storage configuration.
+        /// Defaults to an unconfigured instance so <see cref="R2Configuration.IsConfigured"/> returns false.
+        /// </summary>
+        public R2Configuration R2Configuration { get; set; } = new();
     }
 }

@@ -45,6 +45,9 @@ applicationConfiguration.RabbitMQConfiguration = new GenReport.Infrastructure.Co
 };
 configuration.GetSection("RabbitMQConfiguration").Bind(applicationConfiguration.RabbitMQConfiguration);
 
+// Bind R2Configuration — all fields empty by default; IsConfigured returns false until provisioned.
+configuration.GetSection("R2Configuration").Bind(applicationConfiguration.R2Configuration);
+
 // Bind Ollama options
 builder.Services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
 

@@ -1,7 +1,11 @@
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using ClosedXML.Excel;
 using FluentEmail.Core;
 using GenReport.Domain.DBContext;
+using GenReport.Infrastructure.Configuration;
 using GenReport.Infrastructure.Interfaces;
+using GenReport.Infrastructure.Models.Reports;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,9 +19,10 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
     public sealed class SqliteReportService(
         ApplicationDbContext context,
         IFluentEmail fluentEmail,
+        IHttpClientFactory httpClientFactory,
         ILogger<SqliteReportService> logger) : ISqliteReportService
     {
-        // ── Public entry point ────────────────────────────────────────────────────
+        // ── Public — legacy attachment-only entry point ───────────────────────
 
         /// <inheritdoc />
         public async Task ExportAndEmailAsync(
@@ -26,10 +31,24 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
             string userId,
             CancellationToken ct = default)
         {
+            // Delegate to the new method with no R2 config → always attaches files.
+            await ExportAndDeliverAsync(fileData, fileName, userId, r2Config: null, ct);
+        }
+
+        // ── Public — conditional R2 / attachment delivery ─────────────────────
+
+        /// <inheritdoc />
+        public async Task<ReportDeliveryResult> ExportAndDeliverAsync(
+            byte[] fileData,
+            string fileName,
+            string userId,
+            R2Configuration? r2Config = null,
+            CancellationToken ct = default)
+        {
             if (!long.TryParse(userId, out var userIdLong))
                 throw new ArgumentException("userId must be a valid numeric ID.", nameof(userId));
 
-            // 1. Resolve the user's email address
+            // 1. Resolve the user's email address.
             var user = await context.Users
                 .AsNoTracking()
                 .Where(u => u.Id == userIdLong && !u.IsDeleted)
@@ -40,51 +59,137 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
             logger.LogInformation("Building SQLite report for user {UserId} ({Email}), file: {FileName}",
                 userId, user.Email, fileName);
 
-            // 2. Read SQLite data
-            var tables = ReadSqliteData(fileData);
+            // 2. Read SQLite data (single pass — captures rows, columns, and raw data).
+            var (tables, noOfRows, noOfColumns) = ReadSqliteData(fileData);
 
-            logger.LogInformation("Read {TableCount} table(s) from {FileName}", tables.Count, fileName);
+            logger.LogInformation("Read {TableCount} table(s), {Rows} rows, {Cols} columns from {FileName}",
+                tables.Count, noOfRows, noOfColumns, fileName);
 
-            // 3. Generate Excel and PDF in memory
+            // 3. Generate Excel and PDF in memory.
             var excelBytes = BuildExcel(tables, fileName);
-            var pdfBytes = BuildPdf(tables, fileName);
+            var pdfBytes   = BuildPdf(tables, fileName);
+            var baseName   = Path.GetFileNameWithoutExtension(fileName);
 
-            var baseName = Path.GetFileNameWithoutExtension(fileName);
+            // 4a. Try R2 upload if configured.
+            string? r2Url = null;
+            if (r2Config?.IsConfigured == true)
+            {
+                r2Url = await TryUploadToR2Async(excelBytes, $"{baseName}.xlsx", r2Config, ct);
+            }
 
-            // 4. Send email with both attachments
+            // 4b. Send email — link if R2 succeeded, attachments otherwise.
+            if (r2Url is not null)
+            {
+                await SendLinkEmailAsync(user.Email, user.FirstName, baseName, r2Url, ct);
+            }
+            else
+            {
+                await SendAttachmentEmailAsync(user.Email, user.FirstName, baseName, fileName, excelBytes, pdfBytes, ct);
+            }
+
+            logger.LogInformation(
+                "Report delivered for user {UserId} via {Mode} (rows={Rows}, cols={Cols})",
+                userId, r2Url is not null ? "R2 link" : "email attachment", noOfRows, noOfColumns);
+
+            return new ReportDeliveryResult(r2Url, noOfRows, noOfColumns, excelBytes.LongLength);
+        }
+
+        // ── R2 Upload ─────────────────────────────────────────────────────────
+
+        private async Task<string?> TryUploadToR2Async(
+            byte[] excelBytes,
+            string fileName,
+            R2Configuration r2Config,
+            CancellationToken ct)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient("GoService");
+                var payload = new
+                {
+                    fileName,
+                    content  = Convert.ToBase64String(excelBytes),
+                    mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                };
+
+                using var response = await client.PostAsJsonAsync("/storage/upload", payload, ct);
+                if (!response.IsSuccessStatusCode)
+                {
+                    logger.LogWarning("R2 upload failed with status {Status} — falling back to attachment.",
+                        response.StatusCode);
+                    return null;
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<UploadResponse>(cancellationToken: ct);
+                if (string.IsNullOrWhiteSpace(result?.Url))
+                {
+                    logger.LogWarning("R2 upload returned empty URL — falling back to attachment.");
+                    return null;
+                }
+
+                logger.LogInformation("R2 upload succeeded: {Url}", result.Url);
+                return result.Url;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "R2 upload threw an exception — falling back to attachment.");
+                return null;
+            }
+        }
+
+        // ── Email helpers ─────────────────────────────────────────────────────
+
+        private async Task SendLinkEmailAsync(
+            string email, string firstName, string baseName, string r2Url, CancellationToken ct)
+        {
             await fluentEmail
-                .To(user.Email, user.FirstName)
+                .To(email, firstName)
+                .Subject($"GenReport — {baseName} report ready")
+                .Body($"""
+                    <p>Hi {firstName},</p>
+                    <p>Your report for <strong>{baseName}</strong> is ready.</p>
+                    <p><a href="{r2Url}" style="background:#2D5BE3;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Download Excel Report</a></p>
+                    <p style="color:#888;font-size:12px;">Link expires after 7 days.</p>
+                    <p>— GenReport</p>
+                    """, isHtml: true)
+                .SendAsync(ct);
+        }
+
+        private async Task SendAttachmentEmailAsync(
+            string email, string firstName, string baseName, string fileName,
+            byte[] excelBytes, byte[] pdfBytes, CancellationToken ct)
+        {
+            await fluentEmail
+                .To(email, firstName)
                 .Subject($"GenReport — {baseName} report")
                 .Body($"""
-                    <p>Hi {user.FirstName},</p>
+                    <p>Hi {firstName},</p>
                     <p>Your report for <strong>{fileName}</strong> is ready. Please find the Excel and PDF exports attached.</p>
                     <p>— GenReport</p>
                     """, isHtml: true)
                 .Attach(new FluentEmail.Core.Models.Attachment
                 {
-                    Filename = $"{baseName}.xlsx",
-                    Data = new MemoryStream(excelBytes),
+                    Filename    = $"{baseName}.xlsx",
+                    Data        = new MemoryStream(excelBytes),
                     ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 })
                 .Attach(new FluentEmail.Core.Models.Attachment
                 {
-                    Filename = $"{baseName}.pdf",
-                    Data = new MemoryStream(pdfBytes),
+                    Filename    = $"{baseName}.pdf",
+                    Data        = new MemoryStream(pdfBytes),
                     ContentType = "application/pdf"
                 })
                 .SendAsync(ct);
-
-            logger.LogInformation("Report email sent to {Email} for file {FileName}", user.Email, fileName);
         }
 
-        // ── SQLite Reading ────────────────────────────────────────────────────────
+        // ── SQLite Reading ────────────────────────────────────────────────────
 
         /// <summary>
-        /// Writes the file bytes to a temp path, opens it with SQLite, reads every table.
+        /// Writes bytes to a temp file, opens it with SQLite, reads every table.
+        /// Returns the table data together with aggregate row and column counts.
         /// </summary>
-        private static List<TableData> ReadSqliteData(byte[] fileData)
+        private static (List<TableData> Tables, int NoOfRows, int NoOfColumns) ReadSqliteData(byte[] fileData)
         {
-            // SQLite requires a real file path — write to a temp file
             var tempPath = Path.GetTempFileName() + ".db";
             try
             {
@@ -93,19 +198,20 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                 var connectionString = new SqliteConnectionStringBuilder
                 {
                     DataSource = tempPath,
-                    Mode = SqliteOpenMode.ReadOnly
+                    Mode       = SqliteOpenMode.ReadOnly
                 }.ToString();
 
                 var tables = new List<TableData>();
+                int totalRows = 0, totalCols = 0;
 
                 using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
-                // Get all user tables
                 var tableNames = new List<string>();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;";
+                    cmd.CommandText =
+                        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;";
                     using var reader = cmd.ExecuteReader();
                     while (reader.Read())
                         tableNames.Add(reader.GetString(0));
@@ -114,18 +220,16 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                 foreach (var tableName in tableNames)
                 {
                     var columns = new List<string>();
-                    var rows = new List<string[]>();
+                    var rows    = new List<string[]>();
 
                     using var cmd = connection.CreateCommand();
                     cmd.CommandText = $"SELECT * FROM \"{tableName}\";";
 
                     using var reader = cmd.ExecuteReader();
 
-                    // Column headers
                     for (var i = 0; i < reader.FieldCount; i++)
                         columns.Add(reader.GetName(i));
 
-                    // Data rows
                     while (reader.Read())
                     {
                         var row = new string[reader.FieldCount];
@@ -134,10 +238,12 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                         rows.Add(row);
                     }
 
+                    totalRows += rows.Count;
+                    totalCols  = Math.Max(totalCols, columns.Count);
                     tables.Add(new TableData(tableName, columns, rows));
                 }
 
-                return tables;
+                return (tables, totalRows, totalCols);
             }
             finally
             {
@@ -146,7 +252,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
             }
         }
 
-        // ── Excel Generation ──────────────────────────────────────────────────────
+        // ── Excel Generation ──────────────────────────────────────────────────
 
         private static byte[] BuildExcel(List<TableData> tables, string fileName)
         {
@@ -155,11 +261,9 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
 
             foreach (var table in tables)
             {
-                // Sheet names are limited to 31 chars in Excel
                 var sheetName = table.Name.Length > 31 ? table.Name[..31] : table.Name;
                 var ws = workbook.Worksheets.Add(sheetName);
 
-                // Header row
                 for (var col = 0; col < table.Columns.Count; col++)
                 {
                     var cell = ws.Cell(1, col + 1);
@@ -170,13 +274,10 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                     cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 }
 
-                // Data rows
                 for (var row = 0; row < table.Rows.Count; row++)
                 {
                     for (var col = 0; col < table.Rows[row].Length; col++)
                         ws.Cell(row + 2, col + 1).Value = table.Rows[row][col];
-
-                    // Alternating row background
                     if (row % 2 == 1)
                         ws.Row(row + 2).Style.Fill.BackgroundColor = XLColor.FromHtml("#F3F6FF");
                 }
@@ -189,7 +290,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
             return stream.ToArray();
         }
 
-        // ── PDF Generation ────────────────────────────────────────────────────────
+        // ── PDF Generation ────────────────────────────────────────────────────
 
         private static byte[] BuildPdf(List<TableData> tables, string fileName)
         {
@@ -221,24 +322,22 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
 
                             col.Item().PaddingTop(4).Table(t =>
                             {
-                                // Define columns
                                 t.ColumnsDefinition(def =>
                                 {
                                     for (var i = 0; i < table.Columns.Count; i++)
                                         def.RelativeColumn();
                                 });
 
-                                // Header
-                                foreach (var colName in table.Columns)
+                                // Header — must call t.Header exactly once; all cells go inside.
+                                t.Header(header =>
                                 {
-                                    t.Header(header =>
+                                    foreach (var colName in table.Columns)
                                     {
                                         header.Cell().Background("#2D5BE3").Padding(4)
                                             .Text(colName).FontColor(Colors.White).Bold().FontSize(8);
-                                    });
-                                }
+                                    }
+                                });
 
-                                // Rows
                                 for (var rowIdx = 0; rowIdx < table.Rows.Count; rowIdx++)
                                 {
                                     var bgColor = rowIdx % 2 == 0 ? "#FFFFFF" : "#F3F6FF";
@@ -266,8 +365,15 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
             return document.GeneratePdf();
         }
 
-        // ── Internal DTO ──────────────────────────────────────────────────────────
+        // ── Internal types ────────────────────────────────────────────────────
 
         private sealed record TableData(string Name, List<string> Columns, List<string[]> Rows);
+
+        /// <summary>Shape of the JSON body returned by Go's POST /storage/upload.</summary>
+        private sealed class UploadResponse
+        {
+            [JsonPropertyName("url")]
+            public string? Url { get; set; }
+        }
     }
 }

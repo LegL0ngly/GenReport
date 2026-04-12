@@ -38,7 +38,7 @@ namespace GenReport.Api.Endpoints.Core.Reports
                 };
 
                 var client = httpClientFactory.CreateClient("GoService");
-                using var response = await client.PostAsJsonAsync("/reports/generate", goPayload, ct);
+                    using var response = await client.PostAsJsonAsync("/reports/generate", goPayload, ct);
 
                 var responseBody = await response.Content.ReadAsStringAsync(ct);
 
