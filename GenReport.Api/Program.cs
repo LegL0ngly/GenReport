@@ -126,8 +126,10 @@ builder.Services
     .AddFluentEmail(smtpOpts.FromAddress, smtpOpts.FromName)
     .AddSmtpSender(new SmtpClient(smtpOpts.Host, smtpOpts.Port)
     {
-        EnableSsl = smtpOpts.EnableSsl,
-        Credentials = string.IsNullOrWhiteSpace(smtpOpts.Username)
+        EnableSsl            = smtpOpts.EnableSsl,
+        DeliveryMethod       = SmtpDeliveryMethod.Network,
+        UseDefaultCredentials = false,
+        Credentials          = string.IsNullOrWhiteSpace(smtpOpts.Username)
             ? null
             : new System.Net.NetworkCredential(smtpOpts.Username, smtpOpts.Password)
     });

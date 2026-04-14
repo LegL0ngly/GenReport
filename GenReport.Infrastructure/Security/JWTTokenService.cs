@@ -59,8 +59,7 @@ namespace GenReport.Infrastructure.Security
         /// <returns>The <see cref="(bool Status, string? Message)"/></returns>
         public async Task<(bool Status, string? Message)> ValidateToken(string token , string issuerKey)
         {
-            #pragma warning disable CS8602 // Dereference of a possibly null reference.
-            var result = await _tokenHandler?.ValidateTokenAsync(token, new TokenValidationParameters
+            var result = await tokenHandler.ValidateTokenAsync(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 ValidateIssuer = false,
@@ -68,7 +67,6 @@ namespace GenReport.Infrastructure.Security
                 ClockSkew = TimeSpan.Zero,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(issuerKey)),
             });
-            #pragma warning restore CS8602 // Dereference of a possibly null reference.
             if (result.Exception != null)
             {
                 return (false, result.Exception.Message);
