@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace GenReport.Api.Endpoints.Core.Chat
 {
@@ -23,7 +24,8 @@ namespace GenReport.Api.Endpoints.Core.Chat
         ITokenCountService tokenCountService,
         ISchemaSearchService schemaSearchService,
         ISchemaRagInjectionService schemaRagInjectionService,
-        IChatCompletionFactory chatCompletionFactory) : Endpoint<AddMessageRequest>
+        IChatCompletionFactory chatCompletionFactory,
+        ExecuteSql executeSql) : Endpoint<AddMessageRequest>
     {
         public override void Configure()
         {
@@ -310,6 +312,19 @@ namespace GenReport.Api.Endpoints.Core.Chat
                         id = textPartId,
                         delta
                     });
+                }
+
+                // If the LLM generates a valid query, show a few rows to the user to validate it and send the report job to the queue
+                if (intentEnum is ChatIntent.DatabaseQuery or ChatIntent.ReportGenerate && session.DatabaseId.HasValue)
+                {
+                    var sqlRegex = new Regex(@"```sql\s*(.*?)\s*```", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                    var match = sqlRegex.Match(actualStreamedContent.ToString());
+
+                    if (match.Success)
+                    {
+                        var extractedQuery = match.Groups[1].Value.Trim();
+                        
+                    }
                 }
 
                 await WriteSseAsync(new { type = "text-end", id = textPartId });
